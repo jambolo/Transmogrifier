@@ -1,10 +1,6 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
-
 ## Project
-
-Android app (Kotlin, Jetpack Compose): the user describes a browser app in plain language, an LLM (Claude via the Anthropic Messages API, or OpenAI Codex via the Responses API) writes it in HTML/CSS/JavaScript, and the app runs it in an in-app `WebView`. Follow-up prompts modify the existing app. API keys are entered by the user; there is no subscription sign-in.
 
 `docs/plan.md` is the authoritative development plan (phases, package layout, interfaces, tool definitions, storage, security model). Read it before structural work and record spike/phase results there.
 
@@ -16,13 +12,9 @@ Android app (Kotlin, Jetpack Compose): the user describes a browser app in plain
 
 ## Architecture
 
-Phases 1–4 are implemented: real providers (`llm/anthropic`, `llm/openai`), file-backed projects, DataStore settings with Keystore-encrypted keys, and `AgentEngine`, all wired in `AppContainer`. `runtime` holds `SiteBrowser` (the WebView setup) and `RunnerActivity`, which returns errors through the `RunApp` activity result. The fakes remain for previews and tests.
-
 Providers are adapters behind `LlmProvider`: everything outside `llm/` depends only on its provider-neutral types, and each SDK is confined to its subpackage. The steps for adding a provider are in the `ProviderId` KDoc.
 
-To install a minified release on the emulator without changing the build, sign it with the debug keystore: pass `-Pandroid.injected.signing.store.file=<~/.android/debug.keystore>`, `...store.password=android`, `...key.alias=androiddebugkey`, and `...key.password=android` to `assembleRelease` (quote each `-P` argument in PowerShell).
-
-To run the instrumented tests without erasing the app's data (saved API keys included), skip `connectedAndroidTest`, which uninstalls the app afterwards. Instead build with `assembleDebug assembleDebugAndroidTest`, `adb install -r` both APKs, then run `adb shell am instrument -w com.example.transmogrifier.test/androidx.test.runner.AndroidJUnitRunner`.
+See `DEVELOPMENT.md` for installing minified releases and running instrumented tests. Never run `connectedAndroidTest`: it uninstalls the app, which erases its saved API keys.
 
 Key invariants:
 
