@@ -18,6 +18,8 @@ Android app (Kotlin, Jetpack Compose): the user describes a browser app in plain
 
 Phases 1–4 are implemented: real providers (`llm/anthropic`, `llm/openai`), file-backed projects, DataStore settings with Keystore-encrypted keys, and `AgentEngine`, all wired in `AppContainer`. `runtime` holds `SiteBrowser` (the WebView setup) and `RunnerActivity`, which returns errors through the `RunApp` activity result. The fakes remain for previews and tests.
 
+Providers are adapters behind `LlmProvider`: everything outside `llm/` depends only on its provider-neutral types, and each SDK is confined to its subpackage. The steps for adding a provider are in the `ProviderId` KDoc.
+
 To install a minified release on the emulator without changing the build, sign it with the debug keystore: pass `-Pandroid.injected.signing.store.file=<~/.android/debug.keystore>`, `...store.password=android`, `...key.alias=androiddebugkey`, and `...key.password=android` to `assembleRelease` (quote each `-P` argument in PowerShell).
 
 To run the instrumented tests without erasing the app's data (saved API keys included), skip `connectedAndroidTest`, which uninstalls the app afterwards. Instead build with `assembleDebug assembleDebugAndroidTest`, `adb install -r` both APKs, then run `adb shell am instrument -w com.example.transmogrifier.test/androidx.test.runner.AndroidJUnitRunner`.

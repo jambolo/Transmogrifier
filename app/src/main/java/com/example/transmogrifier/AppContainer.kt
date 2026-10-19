@@ -21,11 +21,12 @@ class AppContainer(context: Context) {
 
     val projectStore: ProjectStore = FileProjectStore(projectsRoot(context))
 
-    val providers: Map<ProviderId, LlmProvider> = mapOf(
-        ProviderId.ANTHROPIC to
-            AnthropicProvider({ settingsRepository.apiKey(ProviderId.ANTHROPIC) }),
-        ProviderId.OPENAI to OpenAiProvider({ settingsRepository.apiKey(ProviderId.OPENAI) })
-    )
+    val providers: Map<ProviderId, LlmProvider> = listOf(
+        AnthropicProvider({ settingsRepository.apiKey(ProviderId.ANTHROPIC) }),
+        OpenAiProvider({ settingsRepository.apiKey(ProviderId.OPENAI) })
+    ).associateBy { it.id }.also { registered ->
+        check(registered.keys == ProviderId.entries.toSet()) { "Every provider needs an adapter" }
+    }
 
     val generationEngine: GenerationEngine =
         AgentEngine(projectStore, settingsRepository, providers)

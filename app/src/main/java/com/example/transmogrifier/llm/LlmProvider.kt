@@ -5,8 +5,15 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 
+/**
+ * The supported providers. Adding one takes a constant here, an [LlmProvider] adapter in its own `llm` subpackage,
+ * its registration in `AppContainer`, and a label in `ui/Labels.kt`; the compiler flags any label that's missing.
+ */
 @Serializable
-enum class ProviderId { ANTHROPIC, OPENAI }
+enum class ProviderId(val defaultModel: String) {
+    ANTHROPIC("claude-opus-5-5"),
+    OPENAI("gpt-6.1-sol")
+}
 
 data class ModelInfo(val id: String, val displayName: String)
 

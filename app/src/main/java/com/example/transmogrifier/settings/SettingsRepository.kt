@@ -8,22 +8,15 @@ import kotlinx.coroutines.flow.update
 
 data class Settings(
     val defaultProvider: ProviderId = ProviderId.ANTHROPIC,
-    val defaultModels: Map<ProviderId, String> = DEFAULT_MODELS,
+    /** The user's choices; providers without one use [ProviderId.defaultModel]. */
+    val defaultModels: Map<ProviderId, String> = emptyMap(),
     val effort: Effort = Effort.HIGH,
     val maxToolIterations: Int = 30,
     val maxOutputTokens: Int = 64_000,
     /** Last four characters of each saved key, for display. Keys never leave `settings` and `llm`. */
     val apiKeyHints: Map<ProviderId, String> = emptyMap()
 ) {
-    fun defaultModel(provider: ProviderId) =
-        defaultModels[provider] ?: DEFAULT_MODELS.getValue(provider)
-
-    companion object {
-        val DEFAULT_MODELS = mapOf(
-            ProviderId.ANTHROPIC to "claude-opus-5-5",
-            ProviderId.OPENAI to "gpt-6.1-sol"
-        )
-    }
+    fun defaultModel(provider: ProviderId) = defaultModels[provider] ?: provider.defaultModel
 }
 
 interface SettingsRepository {

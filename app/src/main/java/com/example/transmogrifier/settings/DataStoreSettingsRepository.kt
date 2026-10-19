@@ -21,7 +21,7 @@ import kotlinx.serialization.json.Json
 @Serializable
 internal data class StoredSettings(
     val defaultProvider: ProviderId = ProviderId.ANTHROPIC,
-    val defaultModels: Map<ProviderId, String> = Settings.DEFAULT_MODELS,
+    val defaultModels: Map<ProviderId, String> = emptyMap(),
     val effort: Effort = Effort.HIGH,
     val maxToolIterations: Int = 30,
     val maxOutputTokens: Int = 64_000,
