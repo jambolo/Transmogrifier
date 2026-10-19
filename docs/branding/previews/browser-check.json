@@ -1,0 +1,29 @@
+{
+  "desktop": {
+    "width": 1440,
+    "horizontalOverflow": false,
+    "brokenImages": [],
+    "fontsLoaded": true,
+    "h1Count": 1,
+    "imageCount": 11
+  },
+  "mobile": {
+    "width": 390,
+    "horizontalOverflow": false,
+    "brokenImages": [],
+    "fontsLoaded": true,
+    "h1Count": 1,
+    "imageCount": 11
+  },
+  "narrow": {
+    "width": 320,
+    "horizontalOverflow": false,
+    "brokenImages": [],
+    "fontsLoaded": true,
+    "h1Count": 1,
+    "imageCount": 11
+  },
+  "reducedMotion": "auto",
+  "failures": [],
+  "externalRequests": []
+}

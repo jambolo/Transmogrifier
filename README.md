@@ -1,6 +1,13 @@
+![Transmogrifier — Little apps. For right now.](docs/branding/assets/campaign/feature-graphic-1024x500.png)
+
+[![CI](https://github.com/jambolo/Transmogrifier/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/jambolo/Transmogrifier/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/jambolo/Transmogrifier/branch/master/graph/badge.svg)](https://codecov.io/gh/jambolo/Transmogrifier)
+
 # Transmogrifier
 
-An Android app where you describe a browser app in plain language, an LLM of your choice writes it in HTML/CSS/JavaScript, and you run it immediately on the device in the app's own browser. Follow-up prompts modify the existing app.
+**Little apps. For right now.**
+
+Describe a scorekeeper for tonight, a checklist for the weekend, or another little app you would like to use. Transmogrifier makes it on your Android device. Open it in the built-in browser and ask for changes as you go. Your apps stay until you delete them.
 
 Apps are written by **Claude**, through the Anthropic API. Support for OpenAI is built but disabled until it has been tested.
 
@@ -15,17 +22,16 @@ You use your own API key, and requests are billed to that account. There is no s
 
 ### Set up
 
-1. On first launch, the app opens **Settings**. Paste your API key, tap **Save**, then **Test**. A passing test shows how many models the key can use.
-2. Choose the **default model**. New apps use it.
-3. Optionally adjust:
-   - **Effort**: how much the model reasons before answering. Higher is slower and costs more.
-   - **Max tool iterations per prompt**: how many steps the model may take for one prompt before it pauses.
-   - **Max output tokens**: the length limit for each model reply.
+1. On first launch, the app opens **Settings**. Paste your API key, tap **Save**, then **Check connection**. A passing check shows how many models the key can use.
+2. The defaults are ready to use. Open **Advanced settings** to change the **Model for new apps** or adjust:
+   - **Thinking effort**: how much the model reasons before answering. More thinking can take longer and cost more.
+   - **Steps per request**: how many steps the model may take for one request before it pauses.
+   - **Reply limit (tokens)**: the length limit for each model reply. These limits are not spending limits.
 
 ### Create an app
 
 1. On the projects screen, tap **New app** and give it a name.
-2. Describe what you want, for example "a tip calculator with a slider", and tap **Send**.
+2. Describe what you want, for example "a tip calculator with a slider", or tap an example to fill the request box. Tap the send arrow (**Make app**) when ready.
 3. The chat shows the model's progress as it writes the files, along with the token usage for each step. The **Files** tab lists the generated files, and tapping one opens a read-only view of its code.
 4. Send follow-up prompts, such as "make the button blue", to change the app.
 
@@ -33,13 +39,13 @@ You use your own API key, and requests are billed to that account. There is no s
 
 ### Run an app
 
-Tap **Run** (the play button) to open the app in the built-in browser. In the toolbar:
+Tap **Open app** (the play button) to open the app in the built-in browser. In the toolbar:
 
 - **Reload** loads the app again, including any changes.
-- The **console** button shows the app's log. A badge counts the errors.
-- **Send errors to the LLM**, in the console, returns to the chat and asks the model to fix the errors.
+- **Error details** shows the app's log. A badge counts the errors.
+- **Try to fix it**, in the error panel, returns to the chat and asks the model to fix the errors.
 
-After a run with errors, the chat's **Fix errors** button sends them to the model at any time.
+After a run with errors, the chat's **Try to fix it** button also sends them to the model. This sends error details and relevant app context to your AI service; usage charges apply.
 
 ### Manage apps
 

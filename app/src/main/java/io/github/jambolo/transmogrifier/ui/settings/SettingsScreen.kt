@@ -3,7 +3,6 @@ package io.github.jambolo.transmogrifier.ui.settings
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -26,6 +25,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -35,7 +35,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -54,6 +53,8 @@ import io.github.jambolo.transmogrifier.llm.ProviderId
 import io.github.jambolo.transmogrifier.settings.Settings
 import io.github.jambolo.transmogrifier.ui.effortLabel
 import io.github.jambolo.transmogrifier.ui.providerLabel
+import io.github.jambolo.transmogrifier.ui.theme.Citrus
+import io.github.jambolo.transmogrifier.ui.theme.Ink
 import io.github.jambolo.transmogrifier.ui.theme.TransmogrifierTheme
 
 @Composable
@@ -91,6 +92,7 @@ fun SettingsScreen(
     onMaxOutputTokens: (Int) -> Unit
 ) {
     val settings = state.settings
+    var advanced by rememberSaveable { mutableStateOf(false) }
     Scaffold(
         topBar = {
             TopAppBar(
@@ -112,7 +114,30 @@ fun SettingsScreen(
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            if (settings.apiKeyHints.keys.none { it.enabled }) {
+                Surface(
+                    color = Citrus,
+                    contentColor = Ink,
+                    shape = MaterialTheme.shapes.large
+                ) {
+                    Column(
+                        Modifier.padding(24.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Text(
+                            stringResource(R.string.brand_tagline),
+                            style = MaterialTheme.typography.headlineMedium
+                        )
+                        Text(stringResource(R.string.brand_welcome))
+                    }
+                }
+            }
             SectionTitle(stringResource(R.string.api_keys))
+            Text(
+                stringResource(R.string.setup_disclosure),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
             for (provider in ProviderId.enabledEntries) {
                 ApiKeyCard(
                     provider,
@@ -124,51 +149,81 @@ fun SettingsScreen(
                 )
             }
 
-            val providers = ProviderId.enabledEntries
-            val provider = settings.newAppProvider
-            if (providers.size > 1) {
-                SectionTitle(stringResource(R.string.default_provider))
-                SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-                    providers.forEachIndexed { i, choice ->
-                        SegmentedButton(
-                            selected = provider == choice,
-                            onClick = { onDefaultProvider(choice) },
-                            shape = SegmentedButtonDefaults.itemShape(i, providers.size)
-                        ) { Text(providerLabel(choice)) }
+            OutlinedButton(
+                onClick = { advanced = !advanced },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    stringResource(
+                        if (advanced) {
+                            R.string.hide_advanced_settings
+                        } else {
+                            R.string.advanced_settings
+                        }
+                    )
+                )
+            }
+            if (advanced) {
+                Text(
+                    stringResource(R.string.advanced_help),
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                val providers = ProviderId.enabledEntries
+                val provider = settings.newAppProvider
+                if (providers.size > 1) {
+                    SectionTitle(stringResource(R.string.default_provider))
+                    SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+                        providers.forEachIndexed { i, choice ->
+                            SegmentedButton(
+                                selected = provider == choice,
+                                onClick = { onDefaultProvider(choice) },
+                                shape = SegmentedButtonDefaults.itemShape(i, providers.size)
+                            ) { Text(providerLabel(choice)) }
+                        }
                     }
                 }
-            }
-            ModelField(
-                provider,
-                settings.defaultModel(provider),
-                state.models[provider].orEmpty(),
-                onDefaultModel
-            )
+                ModelField(
+                    provider,
+                    settings.defaultModel(provider),
+                    state.models[provider].orEmpty(),
+                    onDefaultModel
+                )
 
-            SectionTitle(stringResource(R.string.effort))
-            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                for (effort in Effort.entries) {
-                    FilterChip(
-                        selected = settings.effort == effort,
-                        onClick = { onEffort(effort) },
-                        label = { Text(effortLabel(effort)) }
-                    )
+                SectionTitle(stringResource(R.string.effort))
+                Text(
+                    stringResource(R.string.effort_help),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    for (effort in Effort.entries) {
+                        FilterChip(
+                            selected = settings.effort == effort,
+                            onClick = { onEffort(effort) },
+                            label = { Text(effortLabel(effort)) }
+                        )
+                    }
                 }
-            }
 
-            SectionTitle(stringResource(R.string.limits))
-            NumberField(
-                stringResource(R.string.max_tool_iterations),
-                settings.maxToolIterations,
-                1..200,
-                onMaxToolIterations
-            )
-            NumberField(
-                stringResource(R.string.max_output_tokens),
-                settings.maxOutputTokens,
-                1_024..128_000,
-                onMaxOutputTokens
-            )
+                SectionTitle(stringResource(R.string.limits))
+                Text(
+                    stringResource(R.string.limits_help),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                NumberField(
+                    stringResource(R.string.max_tool_iterations),
+                    settings.maxToolIterations,
+                    1..200,
+                    onMaxToolIterations
+                )
+                NumberField(
+                    stringResource(R.string.max_output_tokens),
+                    settings.maxOutputTokens,
+                    1_024..128_000,
+                    onMaxOutputTokens
+                )
+            }
         }
     }
 }
@@ -199,6 +254,10 @@ private fun ApiKeyCard(
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(providerLabel(provider), style = MaterialTheme.typography.titleSmall)
             Text(
+                stringResource(R.string.api_key_help, providerLabel(provider)),
+                style = MaterialTheme.typography.bodyMedium
+            )
+            Text(
                 if (hint == null) {
                     stringResource(R.string.key_missing)
                 } else {
@@ -225,9 +284,9 @@ private fun ApiKeyCard(
                 },
                 modifier = Modifier.fillMaxWidth()
             )
-            Row(
+            FlowRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Button(
                     onClick = {

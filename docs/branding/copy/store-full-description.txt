@@ -1,0 +1,13 @@
+Make a little app for the thing you need right now.
+
+A scorekeeper for game night. A packing checklist for a weekend away. A picker for those days when choosing lunch becomes a group project.
+
+Describe your idea in everyday words. Transmogrifier uses Claude to create a small app you can open right inside Transmogrifier. Want bigger buttons or a different layout? Ask for a change.
+
+Your apps stay until you delete them. Keep the useful ones. Move on from the ones that have done their job.
+
+This is an early Android version. You need Android 8.0 or later and your own Claude API key. Claude bills your account for creating and changing apps; a Claude subscription does not include this API usage. Making or changing an app requires an internet connection. Your descriptions and relevant app context are sent to Claude.
+
+Generated apps run inside Transmogrifier. This version does not publish them to an app store or provide shared, live apps across devices. Results can need changes before they work as intended.
+
+Start with something small.

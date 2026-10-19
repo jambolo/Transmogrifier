@@ -24,8 +24,15 @@ jobs:
           java-version: '25'
       - uses: android-actions/setup-android@v4
       - uses: gradle/actions/setup-gradle@v6
-      - name: Build and test
-        run: ./gradlew build -x ktlintCheck
+      - name: Build, test, and report coverage
+        run: ./gradlew build :app:createDebugUnitTestCoverageReport -x ktlintCheck
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v7
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: app/build/reports/coverage/test/debug/report.xml
+          disable_search: true
+          fail_ci_if_error: true
 
   lint:
     if: github.event_name == 'pull_request'

@@ -1,0 +1,51 @@
+{
+  "locale": "en-US",
+  "status": "copy specification; not applied to the application",
+  "brand": {
+    "name": "Transmogrifier",
+    "tagline": "Little apps. For right now.",
+    "descriptor": "A little app maker for everyday life.",
+    "campaign": "Make it. Use it. Move on.",
+    "lifecycle": "Your apps stay until you delete them."
+  },
+  "existingActionReplacements": {
+    "new_app": "New app",
+    "run": "Open app",
+    "send": "Send",
+    "stop": "Stop",
+    "continue_generation": "Continue",
+    "test": "Check connection",
+    "fix_errors": "Try to fix it",
+    "console": "Error details",
+    "open_settings": "Open settings"
+  },
+  "proposedSurfaces": {
+    "welcome": "Little apps. For right now.",
+    "appsHeading": "Your apps",
+    "emptyHeading": "What needs a little app?",
+    "emptyBody": "Start with something small. A scorekeeper, a packing list, a lunch picker.",
+    "firstRequestLabel": "What should your app do?",
+    "firstRequestAction": "Make app",
+    "changeLabel": "What would you like to change?",
+    "generationComplete": "Ready to try.",
+    "setupDisclosure": "This early version uses Claude to make apps. You'll need a Claude API key, and Claude charges your account for creating and changing apps. A Claude subscription doesn't include this API usage.",
+    "fixDisclosure": "Sends error details and relevant app context to your AI service. Usage charges apply.",
+    "deleteTitle": "Delete “{appName}”?",
+    "deleteBody": "This removes the app, its files, and its conversation from this device. This can't be undone.",
+    "deleteConfirm": "Delete app",
+    "deleteCancel": "Keep app"
+  },
+  "exampleRequests": [
+    "A scorekeeper for two teams, with big plus and minus buttons.",
+    "A packing checklist for a weekend away. Let me add and check off items.",
+    "A lunch picker. I'll enter the choices, and it picks one at random.",
+    "A counter for laps, with a big button and a reset button."
+  ],
+  "implementationNotes": [
+    "Proposed surfaces require UI or state work; see 05-product-copy.md.",
+    "Convert placeholders to platform-localization syntax before integration.",
+    "Show Ready to try only after generation finishes. It does not imply correctness verification.",
+    "Show Continue only when the request can resume.",
+    "The first request and follow-up actions need distinct states before using Make app."
+  ]
+}

@@ -1,0 +1,7 @@
+<resources>
+    <style name="Theme.Transmogrifier" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/brand_window_background</item>
+        <item name="android:colorAccent">@color/ic_launcher_background</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+</resources>

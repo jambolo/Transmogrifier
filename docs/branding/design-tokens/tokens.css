@@ -1,0 +1,20 @@
+:root {
+  --brand-ink: #252336;
+  --brand-paper: #FFF9F0;
+  --brand-white: #FFFFFF;
+  --brand-citrus: #E9F56A;
+  --brand-coral: #FF795E;
+  --brand-sky: #B8DEF0;
+  --brand-lilac: #D5C7F4;
+  --brand-muted: #615E6C;
+  --brand-outline: #817B89;
+  --brand-error: #A52D37;
+  --brand-success: #236247;
+  --brand-dark-surface: #333044;
+  --font-display: "Bricolage Grotesque", system-ui, sans-serif;
+  --font-body: "Manrope", system-ui, sans-serif;
+  --radius-control: 16px;
+  --radius-card: 24px;
+  --motion-fast: 120ms;
+  --motion-normal: 200ms;
+}

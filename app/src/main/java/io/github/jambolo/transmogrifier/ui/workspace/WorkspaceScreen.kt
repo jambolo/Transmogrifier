@@ -2,8 +2,8 @@ package io.github.jambolo.transmogrifier.ui.workspace
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -20,13 +20,13 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Build
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.CircularProgressIndicator
@@ -39,6 +39,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
@@ -52,9 +53,12 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -122,6 +126,9 @@ fun WorkspaceScreen(
     onOpenFile: (String?) -> Unit
 ) {
     var tab by rememberSaveable { mutableIntStateOf(0) }
+    var draft by rememberSaveable { mutableStateOf("") }
+    val firstRequest =
+        state.files.isEmpty() && state.transcript.none { it is TranscriptEntry.Prompt }
     Scaffold(
         topBar = {
             TopAppBar(
@@ -129,7 +136,9 @@ fun WorkspaceScreen(
                     Column {
                         Text(
                             state.project?.name.orEmpty(),
-                            style = MaterialTheme.typography.titleMedium
+                            style = MaterialTheme.typography.titleMedium,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                         state.project?.let {
                             Text(
@@ -139,7 +148,9 @@ fun WorkspaceScreen(
                                     it.model
                                 ),
                                 style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
                             )
                         }
                     }
@@ -154,7 +165,10 @@ fun WorkspaceScreen(
                         onClick = onRun,
                         enabled = state.files.isNotEmpty() && !state.generating
                     ) {
-                        Icon(Icons.Default.PlayArrow, stringResource(R.string.run))
+                        Icon(
+                            painterResource(R.drawable.ic_brand_play),
+                            stringResource(R.string.run)
+                        )
                     }
                 }
             )
@@ -164,6 +178,9 @@ fun WorkspaceScreen(
                 PromptBar(
                     generating = state.generating,
                     canFixErrors = state.consoleErrors != null,
+                    firstRequest = firstRequest,
+                    draft = draft,
+                    onDraftChange = { draft = it },
                     onSend = onSend,
                     onStop = onStop,
                     onFixErrors = onFixErrors
@@ -191,6 +208,7 @@ fun WorkspaceScreen(
                     state.live,
                     onResume,
                     onOpenSettings,
+                    { draft = it },
                     Modifier.weight(1f)
                 )
             } else {
@@ -207,15 +225,32 @@ private fun ChatPane(
     live: LiveTurn,
     onResume: () -> Unit,
     onOpenSettings: () -> Unit,
+    onExample: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     if (transcript.isEmpty() && !generating) {
-        Box(modifier.fillMaxSize().padding(32.dp), contentAlignment = Alignment.Center) {
+        Column(
+            modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically)
+        ) {
             Text(
                 stringResource(R.string.chat_empty),
                 style = MaterialTheme.typography.bodyLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                for ((label, request) in listOf(
+                    R.string.example_scorekeeper to R.string.prompt_scorekeeper,
+                    R.string.example_packing to R.string.prompt_packing,
+                    R.string.example_lunch to R.string.prompt_lunch
+                )) {
+                    val prompt = stringResource(request)
+                    SuggestionChip(
+                        onClick = { onExample(prompt) },
+                        label = { Text(stringResource(label)) }
+                    )
+                }
+            }
         }
         return
     }
@@ -361,8 +396,9 @@ private fun LiveEntry(live: LiveTurn) {
                 Spacer(Modifier.width(8.dp))
                 Text(
                     when {
-                        live.retry != null -> stringResource(
-                            R.string.retrying,
+                        live.retry != null -> pluralStringResource(
+                            R.plurals.retrying,
+                            live.retry.delaySeconds,
                             live.retry.delaySeconds,
                             live.retry.reason
                         )
@@ -387,11 +423,13 @@ private fun LiveEntry(live: LiveTurn) {
 private fun PromptBar(
     generating: Boolean,
     canFixErrors: Boolean,
+    firstRequest: Boolean,
+    draft: String,
+    onDraftChange: (String) -> Unit,
     onSend: (String) -> Unit,
     onStop: () -> Unit,
     onFixErrors: () -> Unit
 ) {
-    var draft by rememberSaveable { mutableStateOf("") }
     Surface(tonalElevation = 3.dp) {
         Column(
             Modifier
@@ -404,11 +442,27 @@ private fun PromptBar(
                     label = { Text(stringResource(R.string.fix_errors)) },
                     leadingIcon = { Icon(Icons.Default.Warning, null, Modifier.size(18.dp)) }
                 )
+                Text(
+                    stringResource(R.string.fix_disclosure),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 OutlinedTextField(
                     value = draft,
-                    onValueChange = { draft = it },
+                    onValueChange = onDraftChange,
+                    label = {
+                        Text(
+                            stringResource(
+                                if (firstRequest) {
+                                    R.string.first_request
+                                } else {
+                                    R.string.change_request
+                                }
+                            )
+                        )
+                    },
                     placeholder = { Text(stringResource(R.string.prompt_hint)) },
                     maxLines = 5,
                     modifier = Modifier.weight(1f)
@@ -416,17 +470,23 @@ private fun PromptBar(
                 Spacer(Modifier.width(8.dp))
                 if (generating) {
                     FilledIconButton(onClick = onStop) {
-                        Icon(Icons.Default.Close, stringResource(R.string.stop))
+                        Icon(
+                            painterResource(R.drawable.ic_brand_close),
+                            stringResource(R.string.stop)
+                        )
                     }
                 } else {
                     FilledIconButton(
                         onClick = {
                             onSend(draft.trim())
-                            draft = ""
+                            onDraftChange("")
                         },
                         enabled = draft.isNotBlank()
                     ) {
-                        Icon(Icons.AutoMirrored.Filled.Send, stringResource(R.string.send))
+                        Icon(
+                            Icons.AutoMirrored.Filled.Send,
+                            stringResource(if (firstRequest) R.string.make_app else R.string.send)
+                        )
                     }
                 }
             }

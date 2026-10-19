@@ -14,8 +14,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -27,6 +25,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.tooling.preview.Preview
@@ -107,7 +106,7 @@ fun FilesPane(
 fun FileViewer(file: OpenFile, onClose: () -> Unit, modifier: Modifier = Modifier) {
     val scheme = MaterialTheme.colorScheme
     val colors = SyntaxColors(
-        comment = scheme.outline,
+        comment = scheme.onSurfaceVariant,
         string = scheme.tertiary,
         keyword = scheme.primary,
         tag = scheme.secondary,
@@ -117,7 +116,7 @@ fun FileViewer(file: OpenFile, onClose: () -> Unit, modifier: Modifier = Modifie
     Column(modifier.fillMaxSize()) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = onClose) {
-                Icon(Icons.Default.Close, stringResource(R.string.close))
+                Icon(painterResource(R.drawable.ic_brand_close), stringResource(R.string.close))
             }
             Text(file.path, style = MaterialTheme.typography.titleSmall)
         }

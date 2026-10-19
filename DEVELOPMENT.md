@@ -50,6 +50,14 @@ In PowerShell, quote each `-P` argument.
 - **Unit tests** (`app/src/test`) run with `./gradlew build` or `./gradlew testDebugUnitTest`. Provider tests replay SSE fixtures from `app/src/test/resources/fixtures`, so they don't need API keys.
 - **Instrumented tests** (`app/src/androidTest`) load fixture sites in a real `WebView`. Run them locally on an emulator, not in CI.
 
+Generate debug unit-test coverage with:
+
+```bash
+./gradlew :app:createDebugUnitTestCoverageReport
+```
+
+The HTML report is at `app/build/reports/coverage/test/debug/index.html`; the JaCoCo XML report is at `app/build/reports/coverage/test/debug/report.xml`.
+
 `connectedAndroidTest` uninstalls the app afterwards, which erases its data, including saved API keys. To keep the data, install and run the tests yourself:
 
 ```bash
@@ -62,6 +70,8 @@ adb shell am instrument -w io.github.jambolo.transmogrifier.test/androidx.test.r
 ## CI
 
 GitHub Actions (`.github/workflows/ci.yml`) runs the build and tests on every push to `master`, `develop`, and `release/**` and on every pull request. ktlint runs on pull requests.
+
+CI also generates debug unit-test coverage and uploads the XML report to Codecov. Configure the repository in Codecov and save its upload token as the GitHub Actions secret `CODECOV_TOKEN`. Upload failures fail the build job. Instrumented-test coverage is not included.
 
 ## Architecture
 
