@@ -264,6 +264,34 @@ Instrumented test in `app/src/androidTest`: load a fixture site, assert the page
 
 Run opens the generated app in under a second, edits are visible after reload, a deliberate JavaScript error round-trips to a fix.
 
+**Status (2026-10-19): met** (emulator, API 37, minified release).
+
+- `runtime/SiteBrowser` configures the `WebView`. It is separate from the activity, so it can be tested on its own:
+  - Files are served by `WebViewAssetLoader` with a custom path handler on `https://<project id>.appassets.androidplatform.net/`. The handler sets the MIME types itself (`.mjs` included, which module scripts require) and serves `index.html` for directories.
+  - Requests outside that origin get a 403, and missing files a 404. Service workers go through the same interception.
+  - Every response carries a CSP (`default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob:; form-action 'self'; base-uri 'self'`). It covers what interception can't see: WebSockets and POST navigations.
+  - Links leaving the origin open in the system browser after a confirmation. Permission and geolocation requests are denied.
+  - `alert`, `confirm`, and `prompt` become Compose dialogs (`PageDialogHost`). A renderer crash shows a message, and **Reload** restarts the activity.
+- Errors:
+  - `onConsoleMessage` collects the console.
+  - A document-start script reports `error` and `unhandledrejection` with stacks through `WebViewCompat.addWebMessageListener`, limited to the site's origin. It then cancels the event, so Chromium's own "Uncaught" line doesn't duplicate it.
+  - The log sent to the LLM holds the last 20 errors, with stacks, up to 16k characters.
+- `RunnerActivity` runs in `:runner` with its own WebView data directory. It handles size changes itself, so rotating keeps the page.
+  - It returns the error log through the `RunApp` activity result, which replaced the `SavedStateHandle` handoff and the `Runner` route.
+  - `TransmogrifierApplication.container` is lazy, so the runner process never builds it.
+- Measured on the emulator:
+  - Cold launch (new `:runner` process) takes about 570 ms in the release build (`Displayed`, 3 runs) and 2.5 s in the debug build. A warm launch takes about 330 ms.
+  - A line that writes to a missing element was added to the Claude-built tip calculator. **Send errors to the LLM** produced a fix generation that found the line and removed it, and the next run's console was clean.
+  - The external-link confirmation and a thrown error reached the console in the release build.
+- `SiteBrowserTest` (`androidTest`, 3 tests) covers:
+  - the page title;
+  - a console log;
+  - a blocked `fetch`;
+  - a thrown error reported once, with its stack;
+  - an edit visible after reload;
+  - a missing page reported.
+- The system prompt still tells the model not to use `alert()`. The dialogs exist for apps that use it anyway.
+
 ## Later (out of scope for these phases)
 
 - Export/share a project as a `.zip` or install it as a home-screen shortcut.

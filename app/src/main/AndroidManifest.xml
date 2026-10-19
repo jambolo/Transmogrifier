@@ -26,6 +26,14 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <!-- Handles size changes itself so the running page keeps its state. -->
+        <activity
+            android:name=".runtime.RunnerActivity"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize|keyboard|keyboardHidden|navigation|density"
+            android:exported="false"
+            android:process=":runner"
+            android:theme="@style/Theme.Transmogrifier"
+            android:windowSoftInputMode="adjustResize" />
     </application>
 
 </manifest>

@@ -13,7 +13,6 @@ import androidx.navigation.toRoute
 import com.example.transmogrifier.AppContainer
 import com.example.transmogrifier.project.ProjectId
 import com.example.transmogrifier.ui.projects.ProjectsRoute
-import com.example.transmogrifier.ui.runner.RunnerRoute
 import com.example.transmogrifier.ui.settings.SettingsRoute
 import com.example.transmogrifier.ui.workspace.WorkspaceRoute
 import kotlinx.coroutines.flow.first
@@ -27,19 +26,7 @@ sealed interface Destination {
     data class Workspace(val projectId: String) : Destination
 
     @Serializable
-    data class Runner(val projectId: String) : Destination
-
-    @Serializable
     data object Settings : Destination
-}
-
-/** Saved-state keys the runner sets on the workspace's back stack entry. */
-object RunnerResults {
-    /** Error log from the last run, or null when it had no errors. */
-    const val CONSOLE_ERRORS = "consoleErrors"
-
-    /** Error log the user chose to send to the LLM; the workspace starts a fix and clears it. */
-    const val FIX_ERRORS = "fixErrors"
 }
 
 @Composable
@@ -67,31 +54,8 @@ fun AppNavHost(container: AppContainer) {
             WorkspaceRoute(
                 container,
                 projectId,
-                entry.savedStateHandle,
                 onBack = { navController.navigateUp() },
-                onRun = { navController.navigate(Destination.Runner(projectId.value)) },
                 onOpenSettings = { navController.navigate(Destination.Settings) }
-            )
-        }
-        composable<Destination.Runner> { entry ->
-            val projectId = ProjectId(entry.toRoute<Destination.Runner>().projectId)
-            RunnerRoute(
-                container,
-                projectId,
-                onBack = { navController.navigateUp() },
-                onErrorsChanged = { log ->
-                    navController.previousBackStackEntry?.savedStateHandle?.set(
-                        RunnerResults.CONSOLE_ERRORS,
-                        log
-                    )
-                },
-                onSendErrors = { log ->
-                    navController.previousBackStackEntry?.savedStateHandle?.set(
-                        RunnerResults.FIX_ERRORS,
-                        log
-                    )
-                    navController.navigateUp()
-                }
             )
         }
         composable<Destination.Settings> {

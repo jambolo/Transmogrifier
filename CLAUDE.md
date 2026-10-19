@@ -16,14 +16,16 @@ Android app (Kotlin, Jetpack Compose): the user describes a browser app in plain
 
 ## Architecture
 
-Phases 1–3 are implemented: real providers (`llm/anthropic`, `llm/openai`), file-backed projects, DataStore settings with Keystore-encrypted keys, and `AgentEngine`, wired in `AppContainer`. The fakes remain for previews and tests. The runner screen is still a placeholder until Phase 4.
+Phases 1–4 are implemented: real providers (`llm/anthropic`, `llm/openai`), file-backed projects, DataStore settings with Keystore-encrypted keys, and `AgentEngine`, all wired in `AppContainer`. `runtime` holds `SiteBrowser` (the WebView setup) and `RunnerActivity`, which returns errors through the `RunApp` activity result. The fakes remain for previews and tests.
 
 To install a minified release on the emulator without changing the build, sign it with the debug keystore: pass `-Pandroid.injected.signing.store.file=<~/.android/debug.keystore>`, `...store.password=android`, `...key.alias=androiddebugkey`, and `...key.password=android` to `assembleRelease` (quote each `-P` argument in PowerShell).
+
+To run the instrumented tests without erasing the app's data (saved API keys included), skip `connectedAndroidTest`, which uninstalls the app afterwards. Instead build with `assembleDebug assembleDebugAndroidTest`, `adb install -r` both APKs, then run `adb shell am instrument -w com.example.transmogrifier.test/androidx.test.runner.AndroidJUnitRunner`.
 
 Key invariants:
 
 - Conversation history is stored per provider in that provider's own wire format as opaque, append-only JSON. Never translate between providers or edit history (Claude thinking blocks must round-trip unchanged).
 - The model edits the generated site only through tools (`list_files`, `read_file`, `write_file`, `edit_file`, `delete_file`). `Workspace` rejects absolute paths, `..`, disallowed extensions, and over-limit writes; rejections are returned to the model as error tool results, not thrown.
 - API keys are encrypted with an Android Keystore AES-GCM key, never leave `settings`/`llm`, and are never reachable from the `WebView`.
-- The generated app runs in a separate process (`:runner`), served over `https://` with a per-project origin, no file/content access, no `addJavascriptInterface`, and network requests outside the asset domain blocked. Errors flow back via `WebMessagePort`.
+- The generated app runs in a separate process (`:runner`), served over `https://` with a per-project origin, no file/content access, no `addJavascriptInterface`, and network requests outside the asset domain blocked (interception plus a CSP header). Uncaught errors flow back through a web message listener limited to the site's origin. The `:runner` process never builds `AppContainer`, so it never loads API keys.
 - The Claude system prompt and tool definitions must stay byte-identical between requests so prompt caching hits.

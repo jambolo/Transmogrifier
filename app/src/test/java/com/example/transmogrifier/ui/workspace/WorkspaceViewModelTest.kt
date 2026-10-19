@@ -6,7 +6,6 @@ import com.example.transmogrifier.llm.ProviderId
 import com.example.transmogrifier.project.FakeProjectStore
 import com.example.transmogrifier.project.NoticeKind
 import com.example.transmogrifier.project.TranscriptEntry
-import com.example.transmogrifier.ui.RunnerResults
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
@@ -77,23 +76,22 @@ class WorkspaceViewModelTest {
 
     @Test
     fun runnerErrorsStartFixGeneration() = runTest {
-        val handle = SavedStateHandle()
-        val viewModel = viewModel(handle)
-        handle[RunnerResults.CONSOLE_ERRORS] = "boom (app.js:1)"
+        val viewModel = viewModel()
+        viewModel.onRunFinished("boom (app.js:1)", fixErrors = false)
         assertEquals(
             "boom (app.js:1)",
             viewModel.state.first {
                 it.consoleErrors != null
             }.consoleErrors
         )
+        assertTrue(viewModel.state.value.transcript.isEmpty())
 
-        handle[RunnerResults.FIX_ERRORS] = "boom (app.js:1)"
+        viewModel.onRunFinished("boom (app.js:1)", fixErrors = true)
         val done = viewModel.state.first { !it.generating && it.transcript.isNotEmpty() }
         assertEquals(
             TranscriptEntry.Prompt("boom (app.js:1)", fixErrors = true),
             done.transcript.first()
         )
         assertEquals(null, done.consoleErrors)
-        assertEquals(null, handle.get<String>(RunnerResults.FIX_ERRORS))
     }
 }

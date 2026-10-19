@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -27,7 +28,6 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -38,44 +38,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.transmogrifier.AppContainer
 import com.example.transmogrifier.R
-import com.example.transmogrifier.project.ProjectId
+import com.example.transmogrifier.runtime.ConsoleMessage
 import com.example.transmogrifier.ui.theme.TransmogrifierTheme
 
-@Composable
-fun RunnerRoute(
-    container: AppContainer,
-    projectId: ProjectId,
-    onBack: () -> Unit,
-    onErrorsChanged: (String?) -> Unit,
-    onSendErrors: (String) -> Unit
-) {
-    val viewModel = viewModel { RunnerViewModel(projectId, container.projectStore) }
-    val projectName by viewModel.projectName.collectAsStateWithLifecycle()
-    val console by viewModel.console.collectAsStateWithLifecycle()
-    val projectMissing by viewModel.projectMissing.collectAsStateWithLifecycle()
-    LaunchedEffect(projectMissing) { if (projectMissing) onBack() }
-    LaunchedEffect(console) { onErrorsChanged(console.errorLog()) }
-    RunnerScreen(
-        projectName,
-        console,
-        onBack = onBack,
-        onReload = viewModel::reload,
-        onSendErrors = { console.errorLog()?.let(onSendErrors) }
-    ) {
-        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text(
-                stringResource(R.string.browser_placeholder),
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-    }
-}
-
-/** [browser] is the page itself; Phase 4 supplies the WebView. */
+/** [browser] is the page itself, supplied by the runner activity. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RunnerScreen(
@@ -110,8 +77,10 @@ fun RunnerScreen(
             )
         }
     ) { padding ->
-        Column(Modifier.fillMaxSize().padding(top = padding.calculateTopPadding())) {
-            Box(Modifier.weight(1f).fillMaxWidth()) { browser() }
+        Column(Modifier.fillMaxSize().padding(top = padding.calculateTopPadding()).imePadding()) {
+            // The open console panel pads itself for the navigation bar.
+            val insets = if (consoleOpen) Modifier else Modifier.navigationBarsPadding()
+            Box(Modifier.weight(1f).fillMaxWidth().then(insets)) { browser() }
             if (consoleOpen) {
                 ConsolePanel(console, errorCount > 0, onSendErrors, Modifier.weight(0.6f))
             }
@@ -141,8 +110,11 @@ private fun ConsolePanel(
             }
             LazyColumn(Modifier.fillMaxSize().padding(horizontal = 16.dp)) {
                 items(console) { message ->
+                    val location = message.source.takeIf { it.isNotEmpty() }
+                        ?.let { "  $it:${message.line}" }
+                        .orEmpty()
                     Text(
-                        "${message.message}  ${message.source}:${message.line}",
+                        message.message + location,
                         fontFamily = FontFamily.Monospace,
                         style = MaterialTheme.typography.bodySmall,
                         color = when (message.level) {

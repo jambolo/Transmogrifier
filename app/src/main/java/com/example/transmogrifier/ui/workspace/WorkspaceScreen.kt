@@ -1,5 +1,6 @@
 package com.example.transmogrifier.ui.workspace
 
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -56,8 +57,8 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.transmogrifier.AppContainer
 import com.example.transmogrifier.R
@@ -68,6 +69,7 @@ import com.example.transmogrifier.project.NoticeKind
 import com.example.transmogrifier.project.Project
 import com.example.transmogrifier.project.ProjectId
 import com.example.transmogrifier.project.TranscriptEntry
+import com.example.transmogrifier.runtime.RunApp
 import com.example.transmogrifier.ui.providerLabel
 import com.example.transmogrifier.ui.theme.TransmogrifierTheme
 import com.example.transmogrifier.ui.toolLabel
@@ -77,26 +79,26 @@ import java.text.NumberFormat
 fun WorkspaceRoute(
     container: AppContainer,
     projectId: ProjectId,
-    // The back stack entry's handle, which the runner writes its results to.
-    savedStateHandle: SavedStateHandle,
     onBack: () -> Unit,
-    onRun: () -> Unit,
     onOpenSettings: () -> Unit
 ) {
     val viewModel = viewModel {
         WorkspaceViewModel(
             projectId,
-            savedStateHandle,
+            createSavedStateHandle(),
             container.projectStore,
             container.generationEngine
         )
     }
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val runner = rememberLauncherForActivityResult(RunApp) { result ->
+        result?.let { viewModel.onRunFinished(it.errorLog, it.fixErrors) }
+    }
     LaunchedEffect(state.projectMissing) { if (state.projectMissing) onBack() }
     WorkspaceScreen(
         state,
         onBack = onBack,
-        onRun = onRun,
+        onRun = { state.project?.let(runner::launch) },
         onSend = viewModel::send,
         onStop = viewModel::stop,
         onFixErrors = viewModel::fixErrors,

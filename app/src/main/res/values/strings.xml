@@ -71,7 +71,10 @@
     <string name="reload">Reload</string>
     <string name="console">Console</string>
     <string name="send_errors">Send errors to the LLM</string>
-    <string name="browser_placeholder">The app runs here.</string>
+    <string name="page_says">%1$s says</string>
+    <string name="page_crashed">The app stopped: it crashed or ran out of memory. Reload to start it again.</string>
+    <string name="open_link_title">Open this link in your browser?</string>
+    <string name="open">Open</string>
 
     <!-- Settings -->
     <string name="api_keys">API keys</string>

@@ -91,7 +91,7 @@ class FileProjectStore(
 
     override suspend fun workspace(id: ProjectId): Workspace {
         require(io { dir(id).isDirectory }) { "Unknown project $id" }
-        return Workspace(File(dir(id), "site"), limits)
+        return Workspace(siteDir(root, id), limits)
     }
 
     private fun loadedProjects(): Flow<Map<ProjectId, Project>> = projects
@@ -163,9 +163,12 @@ class FileProjectStore(
         }
     }
 
-    private companion object {
-        const val PROJECT = "project.json"
-        const val TRANSCRIPT = "transcript.jsonl"
-        const val CONVERSATION = "conversation.json"
+    companion object {
+        private const val PROJECT = "project.json"
+        private const val TRANSCRIPT = "transcript.jsonl"
+        private const val CONVERSATION = "conversation.json"
+
+        /** The generated app of project [id] under store [root], which the runner serves. */
+        fun siteDir(root: File, id: ProjectId) = File(File(root, id.value), "site")
     }
 }

@@ -19,7 +19,7 @@ class AppContainer(context: Context) {
     val settingsRepository: SettingsRepository =
         DataStoreSettingsRepository(File(context.filesDir, "settings.json"), KeystoreCipher())
 
-    val projectStore: ProjectStore = FileProjectStore(File(context.filesDir, "projects"))
+    val projectStore: ProjectStore = FileProjectStore(projectsRoot(context))
 
     val providers: Map<ProviderId, LlmProvider> = mapOf(
         ProviderId.ANTHROPIC to
@@ -29,4 +29,8 @@ class AppContainer(context: Context) {
 
     val generationEngine: GenerationEngine =
         AgentEngine(projectStore, settingsRepository, providers)
+
+    companion object {
+        fun projectsRoot(context: Context) = File(context.filesDir, "projects")
+    }
 }

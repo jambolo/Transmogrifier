@@ -13,7 +13,6 @@ import com.example.transmogrifier.project.ProjectStore
 import com.example.transmogrifier.project.TranscriptEntry
 import com.example.transmogrifier.project.Workspace
 import com.example.transmogrifier.project.WorkspaceResult
-import com.example.transmogrifier.ui.RunnerResults
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
@@ -21,7 +20,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -72,7 +70,7 @@ class WorkspaceViewModel(
         combine(generating, live, ::Pair),
         files,
         openFile,
-        savedStateHandle.getStateFlow<String?>(RunnerResults.CONSOLE_ERRORS, null)
+        savedStateHandle.getStateFlow<String?>(CONSOLE_ERRORS, null)
     ) { (project, transcript), (generating, live), files, openFile, consoleErrors ->
         WorkspaceUiState(
             project,
@@ -88,14 +86,6 @@ class WorkspaceViewModel(
 
     init {
         refreshFiles()
-        viewModelScope.launch {
-            savedStateHandle.getStateFlow<String?>(RunnerResults.FIX_ERRORS, null)
-                .filterNotNull()
-                .collect { log ->
-                    savedStateHandle[RunnerResults.FIX_ERRORS] = null
-                    fix(log)
-                }
-        }
     }
 
     fun send(prompt: String) = generate(prompt, fixErrors = false)
@@ -104,7 +94,13 @@ class WorkspaceViewModel(
     fun resume() = generate(null, fixErrors = false)
 
     fun fixErrors() {
-        savedStateHandle.get<String>(RunnerResults.CONSOLE_ERRORS)?.let(::fix)
+        savedStateHandle.get<String>(CONSOLE_ERRORS)?.let(::fix)
+    }
+
+    /** Keeps the run's [errorLog] for **Fix errors**, or starts the fix when the user sent them from the runner. */
+    fun onRunFinished(errorLog: String?, fixErrors: Boolean) {
+        savedStateHandle[CONSOLE_ERRORS] = errorLog
+        if (fixErrors && errorLog != null) fix(errorLog)
     }
 
     fun stop() {
@@ -117,7 +113,7 @@ class WorkspaceViewModel(
 
     private fun fix(log: String) {
         if (generating.value) return
-        savedStateHandle[RunnerResults.CONSOLE_ERRORS] = null
+        savedStateHandle[CONSOLE_ERRORS] = null
         generate(log, fixErrors = true)
     }
 
@@ -171,5 +167,8 @@ class WorkspaceViewModel(
 
     private companion object {
         const val OPEN_FILE = "openFile"
+
+        /** Error log from the last run, or null when it had no errors. */
+        const val CONSOLE_ERRORS = "consoleErrors"
     }
 }
