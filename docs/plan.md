@@ -92,9 +92,26 @@ Each provider keeps its history in its own wire format, stored per project as op
 
 Verify on a device with an R8 release build that both SDKs compile at `minSdk 26`, stream a response, and survive minification. Expected friction: Jackson/reflection keep rules. `minSdk` was raised from 24 to 26 instead of enabling core library desugaring, because both SDKs use `java.time` (via Jackson). If an SDK cannot run on Android, that provider falls back to OkHttp + SSE + `kotlinx.serialization` behind the same `LlmProvider` interface.
 
+**Result (2026-10-19): pass.** `anthropic-java` 2.73.0 and `openai-java` 4.86.0, R8 9.4.24 (AGP 9.4.1), release build on the `Medium_Phone_API_37.0` emulator:
+
+- Both SDKs build a streaming request, send it, and surface the bogus-key 401 as their typed exception with the parsed error body.
+- Canned SSE events (text delta, tool-input delta) deserialize through each SDK's Jackson mapper into `RawMessageStreamEvent` / `ResponseStreamEvent`.
+- No app keep rules needed for Jackson: both SDKs ship consumer R8 rules. The only rule added is `-dontwarn com.google.auto.value.AutoValue` (OpenTelemetry via `openai-java`), in `app/src/main/keepRules/sdk.keep` (AGP 9 requires the `.keep` extension there).
+- The template's `optimization { packageScope = setOf("androidx.**", "kotlin.**", "kotlinx.**") }` crashed at runtime: R8 repackaged `kotlin.text.StringsKt__StringBuilderKt` out of `kotlin.text` while its package-private superclass `StringsKt__IndentKt` stayed, giving `IllegalAccessError` on the first SDK call. Removing `packageScope` (optimize everything, the default) fixes it.
+- R8 ran out of memory with the 2 GiB Gradle heap; raised to 4 GiB in `gradle.properties`.
+- Release APK: 5.5 MB.
+
 ### Exit criteria
 
 Interfaces compiled with fake implementations, spike result recorded in this document, dependencies added, unit tests for path validation pass.
+
+**Status (2026-10-19): met.**
+
+- `llm/LlmProvider.kt` and `project/ProjectStore.kt` as above, with `FakeLlmProvider` (scripted events) and `FakeProjectStore` (in-memory metadata, real workspace directories).
+- Interface refinements: `TurnRequest` carries model, effort, max output tokens, system prompt, tool definitions, the opaque `ProviderHistory`, and a `TurnInput` (user prompt or all tool results of the previous turn); `TurnEvent.Completed` returns the appended `ProviderHistory`, since only the provider knows its wire format.
+- `project/Workspace.kt`: relative `/`-separated paths only; rejects empty or dot-prefixed segments (covers `.`, `..`, hidden files), `\`, `:`, control characters, absolute paths, symlink escapes, depth, path length, extension, per-file, file-count, and total-size limits. Results are `WorkspaceResult` values. Default limits: depth 6, 100 files, 512 KiB per file, 4 MiB total.
+- `WorkspaceTest` covers validation, limits, and `edit` semantics (the symlink case is skipped on Windows without symlink privileges).
+- Code style is ktlint `android_studio` (no trailing commas, 100 columns).
 
 ## Phase 2: UI
 

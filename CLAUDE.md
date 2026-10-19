@@ -11,11 +11,12 @@ Android app (Kotlin, Jetpack Compose): the user describes a browser app in plain
 ## Build configuration
 
 - Release builds use R8 (`optimization { enable = true }`). Both SDKs must keep working under minification; verify with a release build on a device/emulator when changing SDK usage or keep rules.
+- Keep rules go in `app/src/main/keepRules/*.keep`. Don't set `optimization.packageScope`: a partial scope made R8 break the Kotlin stdlib at runtime (see the spike result in `docs/plan.md`).
 - Configuration cache is enabled (`gradle.properties`); build logic must stay configuration-cache compatible.
 
 ## Architecture
 
-Current code is still the Android Studio template plus a temporary SDK spike. Anything marked `SPIKE:` (`Spike.kt`, the `Spike.run()` call in `MainActivity`, debug signing on the release build type) is throwaway and should be removed once the spike result is recorded.
+Phase 1 is done: core interfaces and fakes in `llm` and `project`, and the sandboxed `Workspace`. The UI is still the Android Studio template.
 
 Key invariants:
 
