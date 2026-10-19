@@ -56,7 +56,7 @@ In PowerShell, quote each `-P` argument.
 ./gradlew assembleDebug assembleDebugAndroidTest
 adb install -r app/build/outputs/apk/debug/app-debug.apk
 adb install -r app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
-adb shell am instrument -w com.example.transmogrifier.test/androidx.test.runner.AndroidJUnitRunner
+adb shell am instrument -w io.github.jambolo.transmogrifier.test/androidx.test.runner.AndroidJUnitRunner
 ```
 
 ## CI
@@ -92,3 +92,5 @@ Providers are adapters behind `LlmProvider`, and each SDK stays inside its own `
 2. Implement `LlmProvider` in a new `llm/<name>/` package. Map the SDK's errors to `LlmException`, and store history in the provider's own wire format.
 3. Register the adapter in `AppContainer`.
 4. Add its display name in `ui/Labels.kt`; the compiler flags it if it's missing.
+
+A provider constructed with `enabled = false` keeps its code and tests but isn't offered in Settings, isn't registered, and existing projects that use it get a "provider unavailable" notice instead of generating. OpenAI is disabled this way until it has been verified with a real key; to re-enable it, remove `enabled = false` from `ProviderId.OPENAI`.

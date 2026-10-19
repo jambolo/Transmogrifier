@@ -17,7 +17,7 @@
     <string name="test">Test</string>
 
     <string name="provider_anthropic">Claude</string>
-    <string name="provider_openai">OpenAI Codex</string>
+    <string name="provider_openai">OpenAI</string>
     <string name="effort_low">Low</string>
     <string name="effort_medium">Medium</string>
     <string name="effort_high">High</string>
@@ -50,6 +50,7 @@
     <string name="notice_truncated">The reply hit the output token limit before it finished. Raise the limit in Settings or ask for a smaller change.</string>
     <string name="notice_refused">The model declined this request.</string>
     <string name="notice_auth_failed">The API key is missing or was rejected.</string>
+    <string name="notice_provider_unavailable">This app\'s provider isn\'t available in this version, so it can\'t be changed.</string>
     <string name="continue_generation">Continue</string>
     <string name="open_settings">Open settings</string>
     <string name="retrying">Retrying in %1$d s: %2$s</string>
@@ -83,7 +84,10 @@
     <string name="key_missing">No key saved</string>
     <string name="key_saved">Saved key ending in …%1$s</string>
     <string name="key_testing">Testing…</string>
-    <string name="key_test_passed">Key works: %1$d models available</string>
+    <plurals name="key_test_passed">
+        <item quantity="one">Key works: %1$d model available</item>
+        <item quantity="other">Key works: %1$d models available</item>
+    </plurals>
     <string name="key_rejected">The provider rejected this key.</string>
     <string name="key_test_failed">Test failed: %1$s</string>
     <string name="default_provider">Default provider</string>

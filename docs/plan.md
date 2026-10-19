@@ -210,7 +210,7 @@ Typed handling per SDK: invalid key (401) → Settings; rate limit / overload (4
 
 - Real-key check on the emulator, minified release:
   - **Claude** (`claude-opus-5-5`) wrote `index.html`, `css/style.css`, and `js/app.js` for "A tip calculator". "Make the button blue" edited `css/style.css` with `edit_file`. The history replay was accepted, and the cache hits grew from 1.4k to 6.6k tokens.
-  - **OpenAI** (`gpt-6.1-sol`) accepted the request and then returned "You have no credits remaining" mid-stream. Generation is unverified.
+  - **OpenAI** (`gpt-6.1-sol`) accepted the request and then returned "You have no credits remaining" mid-stream. Generation is unverified, so OpenAI is disabled (`ProviderId.OPENAI`, `enabled = false`) until this check passes.
 - Two bugs found and fixed:
   - Under R8, the typed `ResponseInputItem` round-trip added `phase` to user messages, and OpenAI rejected the request with a 400. Both providers now send history as a raw JSON tree (`JsonValue`), and `ProviderMapperTest` asserts that it is sent unchanged.
   - Mid-stream OpenAI errors were all retried as server errors. Now only `rate_limit_exceeded` and server-side codes are retried; anything else, such as an exhausted quota, fails at once.

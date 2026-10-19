@@ -2,26 +2,21 @@
 
 An Android app where you describe a browser app in plain language, an LLM of your choice writes it in HTML/CSS/JavaScript, and you run it immediately on the device in the app's own browser. Follow-up prompts modify the existing app.
 
-Supported LLM providers:
+Apps are written by **Claude**, through the Anthropic API. Support for OpenAI is built but disabled until it has been tested.
 
-- **Claude**, through the Anthropic API.
-- **OpenAI**, through the OpenAI API.
-
-You use your own API key for each provider, and requests are billed to that account. There is no sign-in with a Claude or ChatGPT subscription.
+You use your own API key, and requests are billed to that account. There is no sign-in with a Claude subscription.
 
 ## Requirements
 
 - An Android phone or tablet running Android 8.0 or later.
-- An API key for at least one provider:
-  - Claude: [Claude Console](https://console.anthropic.com/)
-  - OpenAI: [OpenAI Platform](https://platform.openai.com/), on an account with billing credits.
+- An API key from the [Claude Console](https://console.anthropic.com/).
 
 ## Using the app
 
 ### Set up
 
-1. On first launch, the app opens **Settings**. Paste an API key for each provider you want to use, tap **Save**, then **Test**. A passing test shows how many models the key can use.
-2. Choose the **default provider** and its **default model**. New apps use these.
+1. On first launch, the app opens **Settings**. Paste your API key, tap **Save**, then **Test**. A passing test shows how many models the key can use.
+2. Choose the **default model**. New apps use it.
 3. Optionally adjust:
    - **Effort**: how much the model reasons before answering. Higher is slower and costs more.
    - **Max tool iterations per prompt**: how many steps the model may take for one prompt before it pauses.
@@ -48,7 +43,7 @@ After a run with errors, the chat's **Fix errors** button sends them to the mode
 
 ### Manage apps
 
-From the menu next to each app on the projects screen, you can rename or delete it. Each app keeps the provider and model it was created with.
+From the menu next to each app on the projects screen, you can rename or delete it. Each app keeps the model it was created with.
 
 ## Privacy and safety
 

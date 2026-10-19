@@ -1,0 +1,161 @@
+package io.github.jambolo.transmogrifier.llm.openai
+
+import com.openai.client.OpenAIClient
+import com.openai.client.okhttp.OpenAIOkHttpClient
+import com.openai.core.jsonMapper
+import com.openai.errors.InternalServerException
+import com.openai.errors.OpenAIIoException
+import com.openai.errors.OpenAIServiceException
+import com.openai.errors.PermissionDeniedException
+import com.openai.errors.RateLimitException
+import com.openai.errors.SseException
+import com.openai.errors.UnauthorizedException
+import com.openai.helpers.ResponseAccumulator
+import com.openai.models.responses.ResponseStatus
+import io.github.jambolo.transmogrifier.llm.LlmException
+import io.github.jambolo.transmogrifier.llm.LlmProvider
+import io.github.jambolo.transmogrifier.llm.ModelInfo
+import io.github.jambolo.transmogrifier.llm.ProviderId
+import io.github.jambolo.transmogrifier.llm.TurnEvent
+import io.github.jambolo.transmogrifier.llm.TurnRequest
+import java.io.IOException
+import java.time.LocalDate
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.awaitCancellation
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.currentCoroutineContext
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonObject
+
+/** OpenAI coding models through the official Java SDK's streaming Responses API. */
+class OpenAiProvider(
+    private val apiKey: suspend () -> String?,
+    private val clientFactory: (String) -> OpenAIClient = ::defaultClient
+) : LlmProvider {
+    override val id = ProviderId.OPENAI
+
+    private var cached: Pair<String, OpenAIClient>? = null
+
+    override suspend fun listModels(): List<ModelInfo> = withContext(Dispatchers.IO) {
+        val client = client()
+        val today = LocalDate.now()
+        translateErrors {
+            client.models().list().autoPager()
+                .filter { CODING_MODELS.matches(it.id()) }
+                .filter { model -> model.shutdownDate().map { it.isAfter(today) }.orElse(true) }
+                .map { ModelInfo(it.id(), it.id()) }
+                .sortedByDescending { it.id }
+        }
+    }
+
+    override fun runTurn(request: TurnRequest): Flow<TurnEvent> = flow {
+        val client = client()
+        val mapper = OpenAiTurnMapper(request)
+        val accumulator = ResponseAccumulator.create()
+        try {
+            translateErrors {
+                coroutineScope {
+                    val stream = client.responses().createStreaming(OpenAiRequests.params(request))
+                    // Reading the stream blocks, so closing it is how Stop interrupts a turn in progress.
+                    val closer = launch {
+                        try {
+                            awaitCancellation()
+                        } finally {
+                            stream.close()
+                        }
+                    }
+                    try {
+                        for (event in stream.stream()) {
+                            ensureActive()
+                            accumulator.accumulate(event)
+                            event.error().ifPresent {
+                                throw streamError(it.code().orElse(null), it.message())
+                            }
+                            mapper.onEvent(event).forEach { emit(it) }
+                        }
+                    } finally {
+                        closer.cancel()
+                    }
+                }
+            }
+        } catch (e: LlmException) {
+            // Stop closes the stream, which surfaces as an I/O error; report it as the cancellation it is.
+            currentCoroutineContext().ensureActive()
+            throw e
+        }
+        val response = accumulator.response()
+        if (response.status().orElse(null) == ResponseStatus.FAILED) {
+            val error = response.error().orElse(null)
+            throw streamError(error?.code()?.asString(), error?.message() ?: "The response failed")
+        }
+        mapper.finish(response).forEach { emit(it) }
+    }.flowOn(Dispatchers.IO)
+
+    @Synchronized
+    private fun cachedClient(key: String): OpenAIClient = cached?.takeIf { it.first == key }?.second
+        ?: clientFactory(key).also { cached = key to it }
+
+    private suspend fun client(): OpenAIClient {
+        val key = apiKey() ?: throw LlmException.MissingKey()
+        return cachedClient(key)
+    }
+
+    private companion object {
+        val CODING_MODELS =
+            Regex("""gpt-6(\.\d+)?-(astra|sol|luna)|gpt-5\.6-(sol|terra|luna)|gpt-[\d.]+-codex""")
+
+        // Retries happen in the engine, where they can be shown to the user.
+        fun defaultClient(key: String): OpenAIClient =
+            OpenAIOkHttpClient.builder().apiKey(key).maxRetries(0).build()
+
+        inline fun <T> translateErrors(block: () -> T): T = try {
+            block()
+        } catch (e: UnauthorizedException) {
+            throw LlmException.InvalidKey(e)
+        } catch (e: PermissionDeniedException) {
+            throw LlmException.InvalidKey(e)
+        } catch (e: RateLimitException) {
+            throw LlmException.RateLimited(e)
+        } catch (e: InternalServerException) {
+            throw LlmException.Server(e)
+        } catch (e: SseException) {
+            // An error sent mid-stream after a 200, such as an exhausted quota.
+            throw streamError(errorCode(e), e.message.orEmpty(), e)
+        } catch (e: OpenAIServiceException) {
+            throw if (e.statusCode() >= 500) LlmException.Server(e) else LlmException.Rejected(e)
+        } catch (e: OpenAIIoException) {
+            throw LlmException.Network(e)
+        } catch (e: IOException) {
+            throw LlmException.Network(e)
+        }
+
+        /** Only errors known to be transient are retried; quota and request errors fail at once. */
+        fun streamError(
+            code: String?,
+            message: String,
+            cause: Throwable = IllegalStateException(message)
+        ): LlmException = when (code) {
+            "rate_limit_exceeded" -> LlmException.RateLimited(cause)
+            "server_error", "internal_error", "server_is_overloaded", "slow_down" ->
+                LlmException.Server(cause)
+            else -> LlmException.Rejected(cause)
+        }
+
+        fun errorCode(e: SseException): String? {
+            val body = runCatching {
+                Json.parseToJsonElement(jsonMapper().writeValueAsString(e.body())).jsonObject
+            }.getOrNull() ?: return null
+            val error = body["error"] as? JsonObject ?: body
+            return (error["code"] as? JsonPrimitive)?.contentOrNull
+        }
+    }
+}
