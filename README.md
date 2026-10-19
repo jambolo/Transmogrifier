@@ -11,7 +11,7 @@ Early development. See [docs/plan.md](docs/plan.md) for the development plan.
 Requirements:
 
 - Android Studio (its bundled JDK is used for Gradle builds)
-- Android SDK; the app targets SDK 37, minimum SDK 24
+- Android SDK; the app targets SDK 37, minimum SDK 26
 
 Open the project in Android Studio and run the `app` configuration, or build from the command line:
 

@@ -1,3 +1,15 @@
 # Default ignored files
 /shelf/
 /workspace.xml
+
+# Allowed
+!/.gitignore
+!/codeStyles/
+!/codeStyles/Project.xml
+!/codeStyles/codeStyleConfig.xml
+!/compiler.xml
+!/inspectionProfiles/
+!/inspectionProfiles/Project_Default.xml
+!/misc.xml
+!/runConfigurations.xml
+!/vcs.xml

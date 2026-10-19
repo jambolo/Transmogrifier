@@ -90,7 +90,7 @@ Each provider keeps its history in its own wire format, stored per project as op
 
 ### Spike (first task of the phase)
 
-Verify on a device with an R8 release build that both SDKs compile at `minSdk 24`, stream a response, and survive minification. Expected friction: Jackson/reflection keep rules and Java library desugaring. Decide from the result whether to raise `minSdk` to 26 or enable core library desugaring. If an SDK cannot run on Android, that provider falls back to OkHttp + SSE + `kotlinx.serialization` behind the same `LlmProvider` interface.
+Verify on a device with an R8 release build that both SDKs compile at `minSdk 26`, stream a response, and survive minification. Expected friction: Jackson/reflection keep rules. `minSdk` was raised from 24 to 26 instead of enabling core library desugaring, because both SDKs use `java.time` (via Jackson). If an SDK cannot run on Android, that provider falls back to OkHttp + SSE + `kotlinx.serialization` behind the same `LlmProvider` interface.
 
 ### Exit criteria
 
