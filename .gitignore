@@ -1,0 +1,44 @@
+*.iml
+.gradle
+/local.properties
+/.idea/caches
+/.idea/libraries
+/.idea/modules.xml
+/.idea/workspace.xml
+/.idea/navEditor.xml
+/.idea/assetWizardSettings.xml
+.DS_Store
+/build
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+
+# Gradle / Kotlin
+build/
+!gradle/wrapper/gradle-wrapper.jar
+.kotlin/
+
+# JetBrains IDEs (IntelliJ IDEA, Android Studio): personal files only
+.idea/tasks.xml
+.idea/usage.statistics.xml
+.idea/dictionaries/
+.idea/shelf/
+.idea/deploymentTargetSelector.xml
+.idea/deploymentTargetDropDown.xml
+.idea/dataSources/
+.idea/dataSources.local.xml
+.idea/httpRequests/
+.idea/AndroidProjectSystem.xml
+*.ipr
+*.iws
+.idea_modules/
+out/
+cmake-build-*/
+
+# Android
+*.apk
+*.aab
+
+# OS / other editors
+.vscode/
