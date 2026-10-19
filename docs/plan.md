@@ -132,6 +132,17 @@ Interfaces compiled with fake implementations, spike result recorded in this doc
 
 All screens reachable, state survives rotation and process death (saved-state handles), fake generation streams into the activity log.
 
+**Status (2026-10-19): met** (emulator, API 37).
+
+- Navigation Compose with type-safe routes (`ui/AppNavHost.kt`); one view model per screen, created through `AppContainer` (`TransmogrifierApplication`), which wires fakes only: `FakeProjectStore`, `FakeSettingsRepository`, `FakeLlmProvider`, and `agent/FakeGenerationEngine` (streams canned text and writes a real three-file demo site).
+- Interface additions: `ProjectStore` gained `project`, `rename`, `delete`, and a provider-neutral display transcript (`TranscriptEntry`: prompts, replies, tool calls, usage, notices), because the wire-format history is opaque. Projects record provider and model at creation. `GenerationEngine.generate` emits live events (text, running tool, turn persisted); durable results go to the transcript, which the engine owns.
+- Runner → workspace results go through the workspace back stack entry's `SavedStateHandle` (`RunnerResults`): the latest error log enables **Fix errors**, and **Send errors to the LLM** starts a fix immediately. The view model must be given `entry.savedStateHandle`; `createSavedStateHandle()` in the initializer is a different handle. Phase 4 replaces this with an activity result from the `:runner` process.
+- `RunnerScreen` takes the page as a composable slot so Phase 4's `RunnerActivity` can host it with the `WebView`; the console is canned for now.
+- Saved state: prompt draft, selected tab, open file, dialogs, and settings fields. API key drafts are deliberately not saved, so a key never lands in the saved-state `Bundle`.
+- A workspace or runner whose project no longer exists navigates back instead of crashing. The in-memory fakes lose data on process death; this path also covers a project deleted elsewhere.
+- Verified on the emulator: first run opens Settings; key save and test; create, rename, and delete; streaming with Stop; file tree and highlighted viewer; runner console → fix generation; rotation; process death.
+- `WorkspaceViewModelTest` covers streaming, Stop, and the fix-errors handoff.
+
 ## Phase 3: Code generation
 
 ### Contract for generated apps

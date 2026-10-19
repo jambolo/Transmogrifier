@@ -16,7 +16,7 @@ Android app (Kotlin, Jetpack Compose): the user describes a browser app in plain
 
 ## Architecture
 
-Phase 1 is done: core interfaces and fakes in `llm` and `project`, and the sandboxed `Workspace`. The UI is still the Android Studio template.
+Phases 1–2 are done: core interfaces, the sandboxed `Workspace`, and all screens, running against fakes wired in `AppContainer`. Phase 3 replaces the fakes with real providers, storage, and the generation engine.
 
 Key invariants:
 
