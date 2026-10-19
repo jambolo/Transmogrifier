@@ -206,11 +206,18 @@ Typed handling per SDK: invalid key (401) → Settings; rate limit / overload (4
 
 "A tip calculator" produces a working `site/index.html` with each provider on a real device; follow-up "make the button blue" edits the existing files.
 
-**Status (2026-10-19): implemented; the exit check with real API keys is pending.**
+**Status (2026-10-19): met for Claude; OpenAI is blocked by an account with no credits.**
+
+- Real-key check on the emulator, minified release:
+  - **Claude** (`claude-opus-5-5`) wrote `index.html`, `css/style.css`, and `js/app.js` for "A tip calculator". "Make the button blue" edited `css/style.css` with `edit_file`. The history replay was accepted, and the cache hits grew from 1.4k to 6.6k tokens.
+  - **OpenAI** (`gpt-6.1-sol`) accepted the request and then returned "You have no credits remaining" mid-stream. Generation is unverified.
+- Two bugs found and fixed:
+  - Under R8, the typed `ResponseInputItem` round-trip added `phase` to user messages, and OpenAI rejected the request with a 400. Both providers now send history as a raw JSON tree (`JsonValue`), and `ProviderMapperTest` asserts that it is sent unchanged.
+  - Mid-stream OpenAI errors were all retried as server errors. Now only `rate_limit_exceeded` and server-side codes are retried; anything else, such as an exhausted quota, fails at once.
 
 - `AgentEngine` (in `agent`) runs the loop. Before each turn it saves the input it is about to send as the conversation's `pending` input, so Stop, a failure, or the iteration limit can resume with **Continue**. A new prompt keeps any unsent tool results. Only complete turns are appended, and `FileProjectStore` rejects any save that doesn't extend the stored history.
 - Tool calls from a turn cut off by `max_tokens` or a refusal are never run. A `max_tokens` cut returns error results so the model retries in smaller pieces; a refusal stops with a notice.
-- SDK retries are off. The engine retries rate limits, server errors, and network failures (2 s, 5 s, 15 s) and shows "Retrying in N s" in the activity log.
+- SDK retries are off. The engine retries rate limits, server errors, and network failures (2 s, 5 s, 15 s) and shows "Retrying in N s" in the activity log. Errors sent mid-stream are retried only when their code is transient.
 - Interface changes:
   - `TurnInput` is tool results plus optional text, not a prompt-or-results union.
   - New `TurnEvent.ToolCallStarted` and `GenerationEvent.Retrying`.

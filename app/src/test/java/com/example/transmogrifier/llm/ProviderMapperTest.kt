@@ -76,6 +76,16 @@ class ProviderMapperTest {
         // Thinking blocks must round-trip unchanged, signature included.
         assertEquals("sig-abc", thinking.getValue("signature").jsonPrimitive.content)
         assertEquals("Planning the layout.", thinking.getValue("thinking").jsonPrimitive.content)
+
+        // The stored history must be sent as the next request's messages unchanged.
+        val next = request.copy(history = completed.history, input = TurnInput(text = "More"))
+        val body = com.anthropic.core.jsonMapper().writeValueAsString(
+            AnthropicRequests.params(next)._body()
+        )
+        assertEquals(
+            completed.history.items + AnthropicRequests.userMessage(next.input),
+            Json.parseToJsonElement(body).jsonObject.getValue("messages").jsonArray.toList()
+        )
     }
 
     @Test
@@ -182,8 +192,15 @@ class ProviderMapperTest {
         assertEquals("enc-xyz", items[2].getValue("encrypted_content").jsonPrimitive.content)
         assertEquals("commentary", items[3].getValue("phase").jsonPrimitive.content)
 
-        // The stored history must be accepted as the next request's input.
-        OpenAiRequests.params(request.copy(history = completed.history))
+        // The stored history must be sent as the next request's input unchanged.
+        val next = request.copy(history = completed.history, input = TurnInput(text = "More"))
+        val body = com.openai.core.jsonMapper().writeValueAsString(
+            OpenAiRequests.params(next)._body()
+        )
+        assertEquals(
+            completed.history.items + OpenAiRequests.inputItems(next.input),
+            Json.parseToJsonElement(body).jsonObject.getValue("input").jsonArray.toList()
+        )
     }
 
     private fun normalize(json: String) = Json.parseToJsonElement(json).toString()

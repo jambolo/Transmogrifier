@@ -8,6 +8,7 @@ import com.example.transmogrifier.llm.TurnEvent
 import com.example.transmogrifier.llm.TurnRequest
 import com.openai.client.OpenAIClient
 import com.openai.client.okhttp.OpenAIOkHttpClient
+import com.openai.core.jsonMapper
 import com.openai.errors.InternalServerException
 import com.openai.errors.OpenAIIoException
 import com.openai.errors.OpenAIServiceException
@@ -29,6 +30,11 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonObject
 
 /** OpenAI coding models through the official Java SDK's streaming Responses API. */
 class OpenAiProvider(
@@ -72,7 +78,7 @@ class OpenAiProvider(
                             ensureActive()
                             accumulator.accumulate(event)
                             event.error().ifPresent {
-                                throw LlmException.Server(IllegalStateException(it.message()))
+                                throw streamError(it.code().orElse(null), it.message())
                             }
                             mapper.onEvent(event).forEach { emit(it) }
                         }
@@ -88,8 +94,8 @@ class OpenAiProvider(
         }
         val response = accumulator.response()
         if (response.status().orElse(null) == ResponseStatus.FAILED) {
-            val message = response.error().map { it.message() }.orElse("The response failed")
-            throw LlmException.Server(IllegalStateException(message))
+            val error = response.error().orElse(null)
+            throw streamError(error?.code()?.asString(), error?.message() ?: "The response failed")
         }
         mapper.finish(response).forEach { emit(it) }
     }.flowOn(Dispatchers.IO)
@@ -122,14 +128,34 @@ class OpenAiProvider(
         } catch (e: InternalServerException) {
             throw LlmException.Server(e)
         } catch (e: SseException) {
-            // An error sent mid-stream after a 200; almost always server-side.
-            throw LlmException.Server(e)
+            // An error sent mid-stream after a 200, such as an exhausted quota.
+            throw streamError(errorCode(e), e.message.orEmpty(), e)
         } catch (e: OpenAIServiceException) {
             throw if (e.statusCode() >= 500) LlmException.Server(e) else LlmException.Rejected(e)
         } catch (e: OpenAIIoException) {
             throw LlmException.Network(e)
         } catch (e: IOException) {
             throw LlmException.Network(e)
+        }
+
+        /** Only errors known to be transient are retried; quota and request errors fail at once. */
+        fun streamError(
+            code: String?,
+            message: String,
+            cause: Throwable = IllegalStateException(message)
+        ): LlmException = when (code) {
+            "rate_limit_exceeded" -> LlmException.RateLimited(cause)
+            "server_error", "internal_error", "server_is_overloaded", "slow_down" ->
+                LlmException.Server(cause)
+            else -> LlmException.Rejected(cause)
+        }
+
+        fun errorCode(e: SseException): String? {
+            val body = runCatching {
+                Json.parseToJsonElement(jsonMapper().writeValueAsString(e.body())).jsonObject
+            }.getOrNull() ?: return null
+            val error = body["error"] as? JsonObject ?: body
+            return (error["code"] as? JsonPrimitive)?.contentOrNull
         }
     }
 }

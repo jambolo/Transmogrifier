@@ -15,10 +15,10 @@ import com.openai.models.responses.FunctionTool
 import com.openai.models.responses.Response
 import com.openai.models.responses.ResponseCreateParams
 import com.openai.models.responses.ResponseIncludable
-import com.openai.models.responses.ResponseInputItem
 import com.openai.models.responses.ResponseStatus
 import com.openai.models.responses.ResponseStreamEvent
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
@@ -36,11 +36,12 @@ internal object OpenAiRequests {
      * including encrypted reasoning, so nothing depends on server-side conversation state.
      */
     fun params(request: TurnRequest): ResponseCreateParams {
-        val items = (request.history.items + inputItems(request.input)).map(::toInputItem)
+        // Sent as a raw tree: a typed round-trip through ResponseInputItem adds fields under R8.
+        val items = JsonArray(request.history.items + inputItems(request.input))
         val builder = ResponseCreateParams.builder()
             .model(request.model)
             .instructions(request.systemPrompt)
-            .inputOfResponse(items)
+            .input(JsonValue.fromJsonNode(mapper.readTree(items.toString())))
             .tools(request.tools.map { com.openai.models.responses.Tool.ofFunction(tool(it)) })
             .maxOutputTokens(request.maxOutputTokens.toLong())
             .store(false)
@@ -95,9 +96,6 @@ internal object OpenAiRequests {
             }
         }
     )
-
-    private fun toInputItem(item: JsonElement): ResponseInputItem =
-        mapper.readValue(item.toString(), ResponseInputItem::class.java)
 
     /** Output items are appended to history exactly as received, so reasoning and message phases round-trip. */
     fun outputItems(response: Response): List<JsonElement> =

@@ -1,11 +1,11 @@
 package com.example.transmogrifier.llm.anthropic
 
+import com.anthropic.core.JsonValue
 import com.anthropic.core.jsonMapper
 import com.anthropic.models.beta.AnthropicBeta
 import com.anthropic.models.beta.messages.BetaCacheControlEphemeral
 import com.anthropic.models.beta.messages.BetaFallbacksParam
 import com.anthropic.models.beta.messages.BetaMessage
-import com.anthropic.models.beta.messages.BetaMessageParam
 import com.anthropic.models.beta.messages.BetaOutputConfig
 import com.anthropic.models.beta.messages.BetaRawMessageStreamEvent
 import com.anthropic.models.beta.messages.BetaStopReason
@@ -64,7 +64,8 @@ internal object AnthropicRequests {
             )
             // Automatic caching of the longest stable prefix: tools, system prompt, and history.
             .cacheControl(BetaCacheControlEphemeral.builder().build())
-            .messages((request.history.items + userMessage(request.input)).map(::toParam))
+            // Sent as a raw tree so history is replayed verbatim, without a typed round-trip.
+            .messages(rawJson(JsonArray(request.history.items + userMessage(request.input))))
         if (model in fallbackModels) {
             builder.addBeta(
                 AnthropicBeta.SERVER_SIDE_FALLBACK_2026_07_01
@@ -126,8 +127,8 @@ internal object AnthropicRequests {
         }
     }
 
-    private fun toParam(item: JsonElement): BetaMessageParam =
-        mapper.readValue(item.toString(), BetaMessageParam::class.java)
+    private fun rawJson(element: JsonElement): JsonValue =
+        JsonValue.fromJsonNode(mapper.readTree(element.toString()))
 
     /**
      * The assistant message to append to history. After a mid-output refusal fallback, blocks before the last
