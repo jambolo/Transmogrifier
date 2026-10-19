@@ -3,12 +3,12 @@ package com.example.transmogrifier.ui.settings
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.transmogrifier.llm.Effort
+import com.example.transmogrifier.llm.LlmException
 import com.example.transmogrifier.llm.LlmProvider
 import com.example.transmogrifier.llm.ModelInfo
 import com.example.transmogrifier.llm.ProviderId
 import com.example.transmogrifier.settings.Settings
 import com.example.transmogrifier.settings.SettingsRepository
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -21,6 +21,8 @@ sealed interface KeyTest {
     data object Running : KeyTest
 
     data class Passed(val modelCount: Int) : KeyTest
+
+    data object Rejected : KeyTest
 
     data class Failed(val message: String) : KeyTest
 }
@@ -68,9 +70,9 @@ class SettingsViewModel(
                 val list = providers.getValue(provider).listModels()
                 models.update { it + (provider to list) }
                 KeyTest.Passed(list.size)
-            } catch (e: CancellationException) {
-                throw e
-            } catch (e: Exception) {
+            } catch (e: LlmException.InvalidKey) {
+                KeyTest.Rejected
+            } catch (e: LlmException) {
                 KeyTest.Failed(e.message ?: e.javaClass.simpleName)
             }
             keyTests.update { it + (provider to result) }

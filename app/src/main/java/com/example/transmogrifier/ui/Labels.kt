@@ -28,6 +28,9 @@ fun effortLabel(effort: Effort): String = stringResource(
 /** Activity-log line for a tool call, in progress ([running]) or finished. */
 @Composable
 fun toolLabel(name: String, path: String?, running: Boolean): String {
+    // A file tool's path streams in after its name.
+    val awaitingPath = running && path == null && name != "list_files"
+    if (awaitingPath) return stringResource(R.string.tool_preparing)
     val target = path.orEmpty()
     return when (name) {
         "list_files" ->

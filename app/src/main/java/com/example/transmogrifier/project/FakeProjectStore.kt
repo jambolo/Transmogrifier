@@ -19,6 +19,7 @@ class FakeProjectStore(
 ) : ProjectStore {
     private val projects = MutableStateFlow<Map<ProjectId, Project>>(emptyMap())
     private val transcripts = MutableStateFlow<Map<ProjectId, List<TranscriptEntry>>>(emptyMap())
+    private val conversations = MutableStateFlow<Map<ProjectId, Conversation>>(emptyMap())
 
     override fun projects(): Flow<List<ProjectSummary>> = projects.map { projects ->
         projects.values.sortedByDescending { it.updatedAtMillis }.map { it.summary() }
@@ -49,6 +50,12 @@ class FakeProjectStore(
     override suspend fun appendTranscript(id: ProjectId, entry: TranscriptEntry) {
         transcripts.update { it + (id to it[id].orEmpty() + entry) }
         touch(id) { it }
+    }
+
+    override suspend fun conversation(id: ProjectId): Conversation? = conversations.value[id]
+
+    override suspend fun saveConversation(id: ProjectId, conversation: Conversation) {
+        conversations.update { it + (id to conversation) }
     }
 
     override suspend fun workspace(id: ProjectId): Workspace {

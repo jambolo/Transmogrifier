@@ -10,6 +10,7 @@ enum class ProviderId { ANTHROPIC, OPENAI }
 
 data class ModelInfo(val id: String, val displayName: String)
 
+@Serializable
 enum class Effort { LOW, MEDIUM, HIGH, XHIGH, MAX }
 
 /** Provider-neutral tool definition; each provider maps it to its own wire format. */
@@ -22,13 +23,18 @@ data class ToolDefinition(val name: String, val description: String, val inputSc
 @Serializable
 data class ProviderHistory(val provider: ProviderId, val items: List<JsonElement> = emptyList())
 
-sealed interface TurnInput {
-    data class UserPrompt(val text: String) : TurnInput
-
-    /** All results for the previous turn's tool calls, sent together in one message. */
-    data class ToolResults(val results: List<ToolResult>) : TurnInput
+/**
+ * The next user turn: results for every tool call of the previous assistant turn (which must come first), then
+ * optional text.
+ */
+@Serializable
+data class TurnInput(val toolResults: List<ToolResult> = emptyList(), val text: String? = null) {
+    init {
+        require(toolResults.isNotEmpty() || text != null) { "Empty turn input" }
+    }
 }
 
+@Serializable
 data class ToolResult(val callId: String, val content: String, val isError: Boolean)
 
 data class TurnRequest(
@@ -53,8 +59,12 @@ data class Usage(
 sealed interface TurnEvent {
     data class TextDelta(val text: String) : TurnEvent
 
+    /** A tool call began streaming; its input follows as [ToolInputDelta]s. */
+    data class ToolCallStarted(val callId: String, val name: String) : TurnEvent
+
     data class ToolInputDelta(val callId: String, val partialJson: String) : TurnEvent
 
+    /** A complete tool call. Emitted after the turn's output has finished streaming, before [Completed]. */
     data class ToolCall(val callId: String, val name: String, val inputJson: String) : TurnEvent
 
     /** [history] is the request history with this turn's input and the model's output appended. */
@@ -65,10 +75,30 @@ sealed interface TurnEvent {
     ) : TurnEvent
 }
 
+/** Provider failures in a provider-neutral form, so the engine can decide whether to retry. */
+sealed class LlmException(message: String, cause: Throwable? = null) : Exception(message, cause) {
+    class MissingKey : LlmException("No API key saved")
+
+    class InvalidKey(cause: Throwable) : LlmException(cause.message ?: "Invalid API key", cause)
+
+    class RateLimited(cause: Throwable) : LlmException(cause.message ?: "Rate limited", cause)
+
+    class Server(cause: Throwable) : LlmException(cause.message ?: "Server error", cause)
+
+    class Network(cause: Throwable) : LlmException(cause.message ?: "Network error", cause)
+
+    /** The request itself was rejected (400, 404, ...); retrying unchanged will not help. */
+    class Rejected(cause: Throwable) : LlmException(cause.message ?: "Request rejected", cause)
+
+    val retryable: Boolean get() = this is RateLimited || this is Server || this is Network
+}
+
 interface LlmProvider {
     val id: ProviderId
 
+    /** @throws LlmException */
     suspend fun listModels(): List<ModelInfo>
 
+    /** Streams one turn. Fails with [LlmException]; no history is produced for a failed turn. */
     fun runTurn(request: TurnRequest): Flow<TurnEvent>
 }

@@ -21,7 +21,7 @@ data class Settings(
     companion object {
         val DEFAULT_MODELS = mapOf(
             ProviderId.ANTHROPIC to "claude-opus-5-5",
-            ProviderId.OPENAI to "gpt-5-codex"
+            ProviderId.OPENAI to "gpt-6.1-sol"
         )
     }
 }

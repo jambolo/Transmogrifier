@@ -255,6 +255,12 @@ private fun ApiKeyCard(
                     color = MaterialTheme.colorScheme.primary
                 )
 
+                KeyTest.Rejected -> Text(
+                    stringResource(R.string.key_rejected),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.error
+                )
+
                 is KeyTest.Failed -> Text(
                     stringResource(R.string.key_test_failed, test.message),
                     style = MaterialTheme.typography.bodyMedium,

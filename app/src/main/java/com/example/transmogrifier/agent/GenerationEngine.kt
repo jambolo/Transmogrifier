@@ -14,16 +14,21 @@ sealed interface GenerationEvent {
 
     /** The streamed text and running tool so far are now in the transcript. */
     data object TurnPersisted : GenerationEvent
+
+    /** A turn failed with a retryable error; it restarts after [delaySeconds] and its partial output is discarded. */
+    data class Retrying(val attempt: Int, val delaySeconds: Int, val reason: String) :
+        GenerationEvent
 }
 
 interface GenerationEngine {
     /**
-     * Runs one prompt to completion. Cancelling the collector stops generation and records a
+     * Runs one prompt to completion, or resumes pending input from a stopped or failed generation when [prompt]
+     * is null. Cancelling the collector stops generation and records a
      * [com.example.transmogrifier.project.NoticeKind.STOPPED] notice.
      */
     fun generate(
         projectId: ProjectId,
-        prompt: String,
+        prompt: String?,
         fixErrors: Boolean = false
     ): Flow<GenerationEvent>
 }

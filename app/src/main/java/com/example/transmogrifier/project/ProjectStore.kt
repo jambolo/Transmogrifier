@@ -1,7 +1,10 @@
 package com.example.transmogrifier.project
 
+import com.example.transmogrifier.llm.ProviderHistory
 import com.example.transmogrifier.llm.ProviderId
+import com.example.transmogrifier.llm.TurnInput
 import kotlinx.coroutines.flow.Flow
+import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -34,26 +37,50 @@ fun Project.summary() = ProjectSummary(id, name, provider, updatedAtMillis)
 @Serializable
 sealed interface TranscriptEntry {
     @Serializable
+    @SerialName("prompt")
     data class Prompt(val text: String, val fixErrors: Boolean = false) : TranscriptEntry
 
     @Serializable
+    @SerialName("reply")
     data class Reply(val text: String) : TranscriptEntry
 
     /** One executed tool call; [error] is set when the tool failed. */
     @Serializable
+    @SerialName("tool")
     data class Tool(val name: String, val path: String?, val error: String? = null) :
         TranscriptEntry
 
     @Serializable
+    @SerialName("usage")
     data class Usage(val inputTokens: Long, val outputTokens: Long, val cacheReadTokens: Long) :
         TranscriptEntry
 
     @Serializable
+    @SerialName("notice")
     data class Notice(val kind: NoticeKind, val detail: String? = null) : TranscriptEntry
 }
 
 @Serializable
-enum class NoticeKind { STOPPED, ITERATION_LIMIT, FAILED }
+enum class NoticeKind {
+    /** The user pressed Stop; the conversation can continue. */
+    STOPPED,
+    ITERATION_LIMIT,
+
+    /** Output hit the token limit before the model finished. */
+    TRUNCATED,
+    REFUSED,
+
+    /** The API key is missing or was rejected. */
+    AUTH_FAILED,
+    FAILED
+}
+
+/**
+ * The provider conversation for one project: append-only [history] plus [pending] input that has not been sent
+ * successfully yet (a turn that failed or was stopped resumes from it).
+ */
+@Serializable
+data class Conversation(val history: ProviderHistory, val pending: TurnInput? = null)
 
 interface ProjectStore {
     fun projects(): Flow<List<ProjectSummary>>
@@ -69,6 +96,14 @@ interface ProjectStore {
     fun transcript(id: ProjectId): Flow<List<TranscriptEntry>>
 
     suspend fun appendTranscript(id: ProjectId, entry: TranscriptEntry)
+
+    suspend fun conversation(id: ProjectId): Conversation?
+
+    /**
+     * @throws IllegalArgumentException if [conversation] does not extend the stored history (history is
+     *   append-only; a conversation with a different provider replaces it).
+     */
+    suspend fun saveConversation(id: ProjectId, conversation: Conversation)
 
     /**
      * Sandboxed file access to one project's `site/` directory.

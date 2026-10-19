@@ -47,6 +47,13 @@
     <string name="notice_stopped">Stopped.</string>
     <string name="notice_iteration_limit">Stopped: reached the tool-call limit for one prompt.</string>
     <string name="notice_failed">Failed: %1$s</string>
+    <string name="notice_truncated">The reply hit the output token limit before it finished. Raise the limit in Settings or ask for a smaller change.</string>
+    <string name="notice_refused">The model declined this request.</string>
+    <string name="notice_auth_failed">The API key is missing or was rejected.</string>
+    <string name="continue_generation">Continue</string>
+    <string name="open_settings">Open settings</string>
+    <string name="retrying">Retrying in %1$d s: %2$s</string>
+    <string name="tool_preparing">Preparing a change…</string>
     <string name="no_files">No files yet.</string>
     <string name="file_unreadable">This file can\'t be read.</string>
     <string name="tool_listing">Listing files…</string>
@@ -74,6 +81,7 @@
     <string name="key_saved">Saved key ending in …%1$s</string>
     <string name="key_testing">Testing…</string>
     <string name="key_test_passed">Key works: %1$d models available</string>
+    <string name="key_rejected">The provider rejected this key.</string>
     <string name="key_test_failed">Test failed: %1$s</string>
     <string name="default_provider">Default provider</string>
     <string name="default_model">Default model</string>

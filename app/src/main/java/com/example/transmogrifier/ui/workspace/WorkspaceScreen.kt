@@ -34,6 +34,7 @@ import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Scaffold
@@ -79,7 +80,8 @@ fun WorkspaceRoute(
     // The back stack entry's handle, which the runner writes its results to.
     savedStateHandle: SavedStateHandle,
     onBack: () -> Unit,
-    onRun: () -> Unit
+    onRun: () -> Unit,
+    onOpenSettings: () -> Unit
 ) {
     val viewModel = viewModel {
         WorkspaceViewModel(
@@ -98,6 +100,8 @@ fun WorkspaceRoute(
         onSend = viewModel::send,
         onStop = viewModel::stop,
         onFixErrors = viewModel::fixErrors,
+        onResume = viewModel::resume,
+        onOpenSettings = onOpenSettings,
         onOpenFile = viewModel::openFile
     )
 }
@@ -111,6 +115,8 @@ fun WorkspaceScreen(
     onSend: (String) -> Unit,
     onStop: () -> Unit,
     onFixErrors: () -> Unit,
+    onResume: () -> Unit,
+    onOpenSettings: () -> Unit,
     onOpenFile: (String?) -> Unit
 ) {
     var tab by rememberSaveable { mutableIntStateOf(0) }
@@ -177,7 +183,14 @@ fun WorkspaceScreen(
                 )
             }
             if (tab == 0) {
-                ChatPane(state.transcript, state.generating, state.live, Modifier.weight(1f))
+                ChatPane(
+                    state.transcript,
+                    state.generating,
+                    state.live,
+                    onResume,
+                    onOpenSettings,
+                    Modifier.weight(1f)
+                )
             } else {
                 FilesPane(state.files, state.openFile, onOpenFile, Modifier.weight(1f))
             }
@@ -190,6 +203,8 @@ private fun ChatPane(
     transcript: List<TranscriptEntry>,
     generating: Boolean,
     live: LiveTurn,
+    onResume: () -> Unit,
+    onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     if (transcript.isEmpty() && !generating) {
@@ -211,6 +226,10 @@ private fun ChatPane(
     ) {
         if (generating) {
             item(key = "live") { LiveEntry(live) }
+        } else {
+            (transcript.lastOrNull() as? TranscriptEntry.Notice)?.let { notice ->
+                item(key = "actions") { NoticeActions(notice.kind, onResume, onOpenSettings) }
+            }
         }
         items(transcript.asReversed()) { TranscriptItem(it) }
     }
@@ -284,16 +303,42 @@ private fun TranscriptItem(entry: TranscriptEntry) {
             )
         }
 
-        is TranscriptEntry.Notice -> Text(
-            when (entry.kind) {
-                NoticeKind.STOPPED -> stringResource(R.string.notice_stopped)
-                NoticeKind.ITERATION_LIMIT -> stringResource(R.string.notice_iteration_limit)
-                NoticeKind.FAILED -> stringResource(R.string.notice_failed, entry.detail.orEmpty())
-            },
-            style = MaterialTheme.typography.labelMedium,
-            fontStyle = FontStyle.Italic,
-            color = if (entry.kind == NoticeKind.FAILED) MaterialTheme.colorScheme.error else muted
-        )
+        is TranscriptEntry.Notice -> {
+            val isError = entry.kind == NoticeKind.FAILED || entry.kind == NoticeKind.AUTH_FAILED
+            Text(
+                when (entry.kind) {
+                    NoticeKind.STOPPED -> stringResource(R.string.notice_stopped)
+                    NoticeKind.ITERATION_LIMIT -> stringResource(R.string.notice_iteration_limit)
+                    NoticeKind.TRUNCATED -> stringResource(R.string.notice_truncated)
+                    NoticeKind.REFUSED -> stringResource(R.string.notice_refused)
+                    NoticeKind.AUTH_FAILED -> stringResource(R.string.notice_auth_failed)
+                    NoticeKind.FAILED -> stringResource(
+                        R.string.notice_failed,
+                        entry.detail.orEmpty()
+                    )
+                },
+                style = MaterialTheme.typography.labelMedium,
+                fontStyle = FontStyle.Italic,
+                color = if (isError) MaterialTheme.colorScheme.error else muted
+            )
+        }
+    }
+}
+
+@Composable
+private fun NoticeActions(kind: NoticeKind, onResume: () -> Unit, onOpenSettings: () -> Unit) {
+    when (kind) {
+        NoticeKind.STOPPED, NoticeKind.ITERATION_LIMIT, NoticeKind.FAILED ->
+            OutlinedButton(onClick = onResume) {
+                Text(stringResource(R.string.continue_generation))
+            }
+
+        NoticeKind.AUTH_FAILED ->
+            OutlinedButton(onClick = onOpenSettings) {
+                Text(stringResource(R.string.open_settings))
+            }
+
+        NoticeKind.TRUNCATED, NoticeKind.REFUSED -> Unit
     }
 }
 
@@ -308,8 +353,21 @@ private fun LiveEntry(live: LiveTurn) {
                 CircularProgressIndicator(Modifier.size(16.dp), strokeWidth = 2.dp)
                 Spacer(Modifier.width(8.dp))
                 Text(
-                    live.tool?.let { toolLabel(it.name, it.path, running = true) }
-                        ?: stringResource(R.string.thinking),
+                    when {
+                        live.retry != null -> stringResource(
+                            R.string.retrying,
+                            live.retry.delaySeconds,
+                            live.retry.reason
+                        )
+
+                        live.tool != null -> toolLabel(
+                            live.tool.name,
+                            live.tool.path,
+                            running = true
+                        )
+
+                        else -> stringResource(R.string.thinking)
+                    },
                     style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -401,7 +459,7 @@ private val previewState = WorkspaceUiState(
 @Composable
 private fun WorkspaceScreenPreview() {
     TransmogrifierTheme {
-        WorkspaceScreen(previewState, {}, {}, {}, {}, {}, {})
+        WorkspaceScreen(previewState, {}, {}, {}, {}, {}, {}, {}, {})
     }
 }
 
@@ -410,7 +468,14 @@ private fun WorkspaceScreenPreview() {
 private fun WorkspaceScreenIdlePreview() {
     TransmogrifierTheme {
         WorkspaceScreen(
-            previewState.copy(generating = false, live = LiveTurn(), consoleErrors = "error"),
+            previewState.copy(
+                transcript = previewState.transcript + TranscriptEntry.Notice(NoticeKind.STOPPED),
+                generating = false,
+                live = LiveTurn(),
+                consoleErrors = "error"
+            ),
+            {},
+            {},
             {},
             {},
             {},

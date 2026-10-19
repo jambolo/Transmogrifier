@@ -69,7 +69,8 @@ fun AppNavHost(container: AppContainer) {
                 projectId,
                 entry.savedStateHandle,
                 onBack = { navController.navigateUp() },
-                onRun = { navController.navigate(Destination.Runner(projectId.value)) }
+                onRun = { navController.navigate(Destination.Runner(projectId.value)) },
+                onOpenSettings = { navController.navigate(Destination.Settings) }
             )
         }
         composable<Destination.Runner> { entry ->

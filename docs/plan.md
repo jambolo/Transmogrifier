@@ -206,6 +206,34 @@ Typed handling per SDK: invalid key (401) → Settings; rate limit / overload (4
 
 "A tip calculator" produces a working `site/index.html` with each provider on a real device; follow-up "make the button blue" edits the existing files.
 
+**Status (2026-10-19): implemented; the exit check with real API keys is pending.**
+
+- `AgentEngine` (in `agent`) runs the loop. Before each turn it saves the input it is about to send as the conversation's `pending` input, so Stop, a failure, or the iteration limit can resume with **Continue**. A new prompt keeps any unsent tool results. Only complete turns are appended, and `FileProjectStore` rejects any save that doesn't extend the stored history.
+- Tool calls from a turn cut off by `max_tokens` or a refusal are never run. A `max_tokens` cut returns error results so the model retries in smaller pieces; a refusal stops with a notice.
+- SDK retries are off. The engine retries rate limits, server errors, and network failures (2 s, 5 s, 15 s) and shows "Retrying in N s" in the activity log.
+- Interface changes:
+  - `TurnInput` is tool results plus optional text, not a prompt-or-results union.
+  - New `TurnEvent.ToolCallStarted` and `GenerationEvent.Retrying`.
+  - Providers throw a neutral `LlmException`.
+  - `ProjectStore` gained `conversation` / `saveConversation`.
+- Claude: beta streaming Messages API through `client.beta()`.
+  - `fallbacks: "default"` (beta `server-side-fallback-2026-07-01`). After a mid-output fallback, blocks before the last `fallback` marker other than text are not echoed back, and their tool calls are not run.
+  - `thinking.display: "updates"` (beta `thinking-display-updates-2026-08-18`) so Opus 5.5's notes between tool calls appear in the activity log.
+  - `prefix_mismatch_behavior: "error"` (beta `thinking-binding-controls-2026-08-01`): the history is append-only, so a prefix mismatch is a bug to surface.
+  - Each beta is sent only to models that accept it.
+  - Tools are `strict` with `eager_input_streaming`; the executor validates every input and returns invalid JSON to the model as an `INVALID_JSON` error result.
+  - Top-level `cache_control`.
+  - Effort default stays `high`, as planned; Opus 5.5's API default would be `medium`.
+- OpenAI: streaming Responses API, replayed statelessly (`store: false`). Every input and output item is stored verbatim, including encrypted reasoning and message `phase`. Implicit prompt-cache mode is set on GPT-5.6 and later; strict function tools.
+  - **Codex models are gone:** `gpt-5-codex` was shut down on 2026-07-23 and every `*codex*` ID is deprecated. The default is now `gpt-6.1-sol`, which OpenAI's Codex docs recommend for agentic coding. The model list is filtered to the coding families (`gpt-6.x-astra|sol|luna`, `gpt-5.6-*`, remaining `*-codex`) and drops models past their shutdown date.
+- Settings persist in DataStore (`settings.json`). API keys are AES-GCM encrypted with an Android Keystore key; if the key is lost, the saved API key is cleared and must be entered again.
+- Projects persist under `filesDir/projects/<id>/` (`project.json`, `transcript.jsonl`, `conversation.json`, `site/`).
+- Tests:
+  - `ProviderMapperTest` uses SSE fixtures written by hand to the documented wire format; no real key was available to record them.
+  - `AgentEngineTest` covers multi-tool turns, the iteration limit, Stop and resume, truncated tool calls, retries, and auth failure.
+  - Also `ToolExecutorTest` and `FileProjectStoreTest`.
+- Verified on the emulator (R8 release): both SDKs send a real request with a bad key and get a typed 401; the generation shows an "Open settings" notice; keys survive restarts encrypted. A 401 comes back before the request body is validated, so the request shapes are verified only offline until a run with real keys.
+
 ## Phase 4: Execution in the in-app browser
 
 ### Hosting

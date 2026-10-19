@@ -16,7 +16,9 @@ Android app (Kotlin, Jetpack Compose): the user describes a browser app in plain
 
 ## Architecture
 
-Phases 1–2 are done: core interfaces, the sandboxed `Workspace`, and all screens, running against fakes wired in `AppContainer`. Phase 3 replaces the fakes with real providers, storage, and the generation engine.
+Phases 1–3 are implemented: real providers (`llm/anthropic`, `llm/openai`), file-backed projects, DataStore settings with Keystore-encrypted keys, and `AgentEngine`, wired in `AppContainer`. The fakes remain for previews and tests. The runner screen is still a placeholder until Phase 4.
+
+To install a minified release on the emulator without changing the build, sign it with the debug keystore: pass `-Pandroid.injected.signing.store.file=<~/.android/debug.keystore>`, `...store.password=android`, `...key.alias=androiddebugkey`, and `...key.password=android` to `assembleRelease` (quote each `-P` argument in PowerShell).
 
 Key invariants:
 

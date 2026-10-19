@@ -18,9 +18,10 @@ class FakeGenerationEngine(private val store: ProjectStore, private val delayMil
     GenerationEngine {
     override fun generate(
         projectId: ProjectId,
-        prompt: String,
+        prompt: String?,
         fixErrors: Boolean
     ): Flow<GenerationEvent> = flow {
+        if (prompt == null) return@flow
         store.appendTranscript(projectId, TranscriptEntry.Prompt(prompt, fixErrors))
         try {
             val workspace = store.workspace(projectId)

@@ -28,7 +28,11 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /** The in-progress part of a generation that is not yet in the transcript. */
-data class LiveTurn(val text: String = "", val tool: GenerationEvent.ToolRunning? = null)
+data class LiveTurn(
+    val text: String = "",
+    val tool: GenerationEvent.ToolRunning? = null,
+    val retry: GenerationEvent.Retrying? = null
+)
 
 data class OpenFile(val path: String, val content: String?)
 
@@ -96,6 +100,9 @@ class WorkspaceViewModel(
 
     fun send(prompt: String) = generate(prompt, fixErrors = false)
 
+    /** Continues a stopped or failed generation from its pending input. */
+    fun resume() = generate(null, fixErrors = false)
+
     fun fixErrors() {
         savedStateHandle.get<String>(RunnerResults.CONSOLE_ERRORS)?.let(::fix)
     }
@@ -114,26 +121,27 @@ class WorkspaceViewModel(
         generate(log, fixErrors = true)
     }
 
-    private fun generate(prompt: String, fixErrors: Boolean) {
+    private fun generate(prompt: String?, fixErrors: Boolean) {
         if (generating.value) return
         generating.value = true
         generation = viewModelScope.launch {
             try {
                 engine.generate(projectId, prompt, fixErrors).collect { event ->
                     when (event) {
-                        is GenerationEvent.TextDelta -> live.update {
-                            it.copy(
-                                text =
-                                it.text + event.text
-                            )
-                        }
+                        is GenerationEvent.TextDelta ->
+                            live.update { it.copy(text = it.text + event.text, retry = null) }
 
-                        is GenerationEvent.ToolRunning -> live.update { it.copy(tool = event) }
+                        is GenerationEvent.ToolRunning -> live.update {
+                            it.copy(tool = event, retry = null)
+                        }
 
                         GenerationEvent.TurnPersisted -> {
                             live.value = LiveTurn()
                             refreshFiles()
                         }
+
+                        // The failed attempt's partial output is discarded.
+                        is GenerationEvent.Retrying -> live.value = LiveTurn(retry = event)
                     }
                 }
             } catch (e: CancellationException) {
