@@ -27,6 +27,7 @@ You use your own API key, and requests are billed to that account. There is no s
    - **Thinking effort**: how much the model reasons before answering. More thinking can take longer and cost more.
    - **Steps per request**: how many steps the model may take for one request before it pauses.
    - **Reply limit (tokens)**: the length limit for each model reply. These limits are not spending limits.
+   - **Instructions for all apps**: standing instructions the model follows in every app, such as "Use large text". Changes apply from each app's next request.
 
 ### Create an app
 

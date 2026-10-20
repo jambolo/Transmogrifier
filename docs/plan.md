@@ -167,6 +167,8 @@ The `Workspace` rejects absolute paths, `..`, disallowed extensions, and over-li
 
 Stable text (kept byte-identical between requests so it caches): the generated-app contract, mobile-first and touch-friendly UI, no `alert()`-based flows, keep state in `localStorage`, always leave `index.html` runnable, finish each prompt with a short summary of what changed.
 
+The user's **Instructions for all apps** (Settings, at most 4,000 characters) are never put in the system prompt, because editing them would change the prefix of every existing conversation. Instead, `AgentEngine` puts them in front of the next user text in an `<instructions>` block whenever they differ from `Conversation.instructions`, which records the instructions last delivered in that history. If the user clears them, the next prompt says so. The transcript shows only the user's prompt.
+
 ### Generation loop
 
 1. Append the user prompt (and, for "Fix errors", captured console errors) to the conversation.

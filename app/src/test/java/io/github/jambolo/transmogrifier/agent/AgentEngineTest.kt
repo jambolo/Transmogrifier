@@ -67,11 +67,12 @@ class AgentEngineTest {
 
     private suspend fun TestScope.engine(
         provider: LlmProvider,
-        settings: Settings = Settings()
+        settings: Settings = Settings(),
+        settingsRepository: FakeSettingsRepository = FakeSettingsRepository(settings)
     ): Pair<AgentEngine, ProjectId> {
         val engine = AgentEngine(
             store,
-            FakeSettingsRepository(settings),
+            settingsRepository,
             mapOf(
                 ProviderId.ANTHROPIC to provider
             ),
@@ -177,6 +178,29 @@ class AgentEngineTest {
         engine.generate(id, "Go on").toList()
         assertEquals(TurnInput(text = "Go on"), requests.last().input)
         assertNull(store.conversation(id)!!.pending)
+    }
+
+    @Test
+    fun instructionsAreSentOnceAndAgainWhenChanged() = runTest {
+        val settings = FakeSettingsRepository(Settings(appInstructions = " Use large text. "))
+        val (engine, id) = engine(
+            ScriptedProvider { listOf(completed(it, StopReason.END_TURN)) },
+            settingsRepository = settings
+        )
+        engine.generate(id, "A counter").toList()
+        engine.generate(id, "Make it blue").toList()
+        settings.update { it.copy(appInstructions = "") }
+        engine.generate(id, "Add a reset").toList()
+
+        val texts = requests.map { it.input.text!! }
+        assertTrue(texts[0].contains("<instructions>\nUse large text.\n</instructions>"))
+        assertTrue(texts[0].endsWith("\n\nA counter"))
+        assertEquals("Make it blue", texts[1])
+        assertTrue(texts[2].startsWith("The user removed their instructions"))
+        assertTrue(texts[2].endsWith("\n\nAdd a reset"))
+        assertTrue(requests.all { it.systemPrompt == AgentPrompt.SYSTEM })
+        assertEquals("", store.conversation(id)!!.instructions)
+        assertEquals(TranscriptEntry.Prompt("A counter"), store.transcript(id).first().first())
     }
 
     @Test

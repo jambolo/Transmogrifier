@@ -90,6 +90,8 @@ class SettingsViewModel(
 
     fun setMaxOutputTokens(value: Int) = update { it.copy(maxOutputTokens = value) }
 
+    fun setAppInstructions(value: String) = update { it.copy(appInstructions = value) }
+
     private fun update(transform: (Settings) -> Settings) {
         viewModelScope.launch { repository.update(transform) }
     }

@@ -69,6 +69,7 @@ class AgentEngine(
             // A new prompt replaces unsent text but must still carry unsent tool results.
             else -> TurnInput(pending.toolResults, text)
         }
+        val instructions = settings.appInstructions.trim()
         val workspace = store.workspace(projectId)
         val executor = ToolExecutor(workspace)
 
@@ -79,6 +80,14 @@ class AgentEngine(
             for (iteration in 1..settings.maxToolIterations) {
                 conversation = conversation.copy(pending = input)
                 store.saveConversation(projectId, conversation)
+                // Changed instructions ride on the next user text so the system prompt, and with it the cached
+                // prefix and Claude's thinking blocks, never changes.
+                val inputText = input.text
+                val sent = if (inputText != null && instructions != conversation.instructions) {
+                    input.copy(text = withInstructions(instructions, inputText))
+                } else {
+                    input
+                }
                 val request = TurnRequest(
                     project.model,
                     settings.effort,
@@ -86,10 +95,19 @@ class AgentEngine(
                     systemPrompt,
                     AgentPrompt.TOOLS,
                     conversation.history,
-                    input
+                    sent
                 )
                 val turn = runTurnWithRetries(provider, request)
-                conversation = Conversation(turn.completed.history)
+                // A turn refused before any output leaves the history, and so the instructions, unchanged.
+                val appended = turn.completed.history.items.size > conversation.history.items.size
+                conversation = Conversation(
+                    turn.completed.history,
+                    instructions = if (inputText != null && appended) {
+                        instructions
+                    } else {
+                        conversation.instructions
+                    }
+                )
                 store.saveConversation(projectId, conversation)
                 if (turn.text.isNotBlank()) {
                     store.appendTranscript(projectId, TranscriptEntry.Reply(turn.text.trim()))
@@ -253,4 +271,11 @@ class AgentEngine(
 
     private fun fixErrorsPrompt(log: String) =
         "Running the app produced these errors in the browser console. Fix their causes.\n\n$log"
+
+    private fun withInstructions(instructions: String, text: String) = if (instructions.isEmpty()) {
+        "The user removed their instructions for all of their apps. Earlier ones no longer apply.\n\n$text"
+    } else {
+        "The user's instructions for all of their apps, replacing any earlier ones:\n" +
+            "<instructions>\n$instructions\n</instructions>\n\n$text"
+    }
 }

@@ -80,10 +80,15 @@ enum class NoticeKind {
 
 /**
  * The provider conversation for one project: append-only [history] plus [pending] input that has not been sent
- * successfully yet (a turn that failed or was stopped resumes from it).
+ * successfully yet (a turn that failed or was stopped resumes from it). [instructions] are the user's standing
+ * instructions as last delivered in [history].
  */
 @Serializable
-data class Conversation(val history: ProviderHistory, val pending: TurnInput? = null)
+data class Conversation(
+    val history: ProviderHistory,
+    val pending: TurnInput? = null,
+    val instructions: String = ""
+)
 
 interface ProjectStore {
     fun projects(): Flow<List<ProjectSummary>>

@@ -100,6 +100,9 @@
     <string name="max_tool_iterations">Steps per request</string>
     <string name="max_output_tokens">Reply limit (tokens)</string>
     <string name="range">%1$d to %2$d</string>
+    <string name="app_instructions">Instructions for all apps</string>
+    <string name="app_instructions_help">Your AI service follows these in every app, for example \"Use large text\" or \"Make the apps in Spanish.\" Changes apply from each app\'s next request.</string>
+    <string name="character_count">%1$d / %2$d</string>
 
     <!-- Brand and plain-language guidance -->
     <string name="brand_tagline">Little apps. For right now.</string>

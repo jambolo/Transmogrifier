@@ -73,7 +73,8 @@ fun SettingsRoute(container: AppContainer, onBack: () -> Unit) {
         onDefaultModel = viewModel::setDefaultModel,
         onEffort = viewModel::setEffort,
         onMaxToolIterations = viewModel::setMaxToolIterations,
-        onMaxOutputTokens = viewModel::setMaxOutputTokens
+        onMaxOutputTokens = viewModel::setMaxOutputTokens,
+        onAppInstructions = viewModel::setAppInstructions
     )
 }
 
@@ -89,7 +90,8 @@ fun SettingsScreen(
     onDefaultModel: (ProviderId, String) -> Unit,
     onEffort: (Effort) -> Unit,
     onMaxToolIterations: (Int) -> Unit,
-    onMaxOutputTokens: (Int) -> Unit
+    onMaxOutputTokens: (Int) -> Unit,
+    onAppInstructions: (String) -> Unit
 ) {
     val settings = state.settings
     var advanced by rememberSaveable { mutableStateOf(false) }
@@ -223,9 +225,35 @@ fun SettingsScreen(
                     1_024..128_000,
                     onMaxOutputTokens
                 )
+
+                SectionTitle(stringResource(R.string.app_instructions))
+                Text(
+                    stringResource(R.string.app_instructions_help),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                InstructionsField(settings.appInstructions, onAppInstructions)
             }
         }
     }
+}
+
+@Composable
+private fun InstructionsField(value: String, onValue: (String) -> Unit) {
+    val max = Settings.MAX_APP_INSTRUCTIONS_LENGTH
+    var text by rememberSaveable { mutableStateOf(value) }
+    OutlinedTextField(
+        value = text,
+        onValueChange = {
+            text = it.take(max)
+            onValue(text)
+        },
+        label = { Text(stringResource(R.string.app_instructions)) },
+        supportingText = { Text(stringResource(R.string.character_count, text.length, max)) },
+        minLines = 3,
+        maxLines = 10,
+        modifier = Modifier.fillMaxWidth()
+    )
 }
 
 @Composable
@@ -416,7 +444,8 @@ private fun SettingsScreenPreview() {
             onDefaultModel = { _, _ -> },
             onEffort = {},
             onMaxToolIterations = {},
-            onMaxOutputTokens = {}
+            onMaxOutputTokens = {},
+            onAppInstructions = {}
         )
     }
 }

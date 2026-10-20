@@ -13,6 +13,8 @@ data class Settings(
     val effort: Effort = Effort.HIGH,
     val maxToolIterations: Int = 30,
     val maxOutputTokens: Int = 64_000,
+    /** The user's standing instructions for every app; blank for none. */
+    val appInstructions: String = "",
     /** Last four characters of each saved key, for display. Keys never leave `settings` and `llm`. */
     val apiKeyHints: Map<ProviderId, String> = emptyMap()
 ) {
@@ -21,6 +23,10 @@ data class Settings(
         get() = defaultProvider.takeIf { it.enabled } ?: ProviderId.enabledEntries.first()
 
     fun defaultModel(provider: ProviderId) = defaultModels[provider] ?: provider.defaultModel
+
+    companion object {
+        const val MAX_APP_INSTRUCTIONS_LENGTH = 4_000
+    }
 }
 
 interface SettingsRepository {
