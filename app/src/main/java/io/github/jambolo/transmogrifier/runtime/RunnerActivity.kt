@@ -95,6 +95,8 @@ class RunnerActivity : ComponentActivity() {
     }
 
     override fun onPause() {
+        // The page is paused too, so it couldn't follow along.
+        browser?.stopSpeech()
         browser?.takeUnless { it.crashed.value }?.webView?.run {
             onPause()
             // Timers are per process, and this process only runs the page.

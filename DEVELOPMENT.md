@@ -91,7 +91,7 @@ Key invariants:
 - Conversation history is stored per provider in that provider's own wire format, as opaque append-only JSON. Never translate it between providers or edit it: Claude's thinking blocks must round-trip unchanged.
 - The model changes the generated site only through tools (`list_files`, `read_file`, `write_file`, `edit_file`, `delete_file`). `Workspace` rejects absolute paths, `..`, disallowed extensions, and over-limit writes, and these rejections go back to the model as error tool results.
 - API keys are encrypted with an Android Keystore AES-GCM key and never leave `settings` and `llm`.
-- The generated app runs in the `:runner` process, which never builds `AppContainer`. It is served over `https://` on a per-project origin, with no file or content access and no `addJavascriptInterface`. Requests outside that origin are blocked, both by request interception and by a Content Security Policy header. Uncaught errors reach the app through a web message listener limited to the site's origin.
+- The generated app runs in the `:runner` process, which never builds `AppContainer`. It is served over `https://` on a per-project origin, with no file or content access and no `addJavascriptInterface`. Requests outside that origin are blocked, both by request interception and by a Content Security Policy header. Uncaught errors and speech requests reach the app through web message listeners limited to the site's origin.
 - The system prompt and tool definitions must stay byte-identical between requests so prompt caching hits.
 
 ### Adding an LLM provider

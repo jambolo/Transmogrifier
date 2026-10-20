@@ -90,6 +90,64 @@ class SiteBrowserTest {
         )
     }
 
+    @Test
+    fun speaksAndPlaysAudioWithoutATap() {
+        awaitTitle("Fixture")
+        site(
+            "js/app.js",
+            """
+            const audio = new AudioContext();
+            setTimeout(() => console.log('audio ' + audio.state), 500);
+            speechSynthesis.onvoiceschanged = () => {
+              console.log('voices ' + (speechSynthesis.getVoices().length > 0));
+            };
+            const utterance = new SpeechSynthesisUtterance('Test');
+            utterance.volume = 0.2;
+            utterance.onstart = () => console.log('speech started');
+            utterance.onend = () => console.log('speech ended');
+            utterance.onerror = (event) => console.log('speech error ' + event.error);
+            speechSynthesis.speak(utterance);
+            """.trimIndent()
+        )
+        onMain { browser.reload() }
+        val console = awaitConsole { messages ->
+            messages.any { it.message.startsWith("audio ") } &&
+                messages.any { it.message.startsWith("voices ") } &&
+                messages.any { it.message.matches(SPEECH_DONE) }
+        }.map { it.message }
+
+        assertTrue(console.toString(), "audio running" in console)
+        assertTrue(console.toString(), "voices true" in console)
+        assertEquals(
+            listOf("speech started", "speech ended"),
+            console.filter { it.startsWith("speech") }
+        )
+    }
+
+    @Test
+    fun cancelEndsQueuedSpeech() {
+        awaitTitle("Fixture")
+        site(
+            "js/app.js",
+            """
+            for (const text of ['One', 'Two']) {
+              const utterance = new SpeechSynthesisUtterance(text);
+              utterance.onend = () => console.log(text + ' ended');
+              utterance.onerror = (event) => console.log(text + ' ' + event.error);
+              speechSynthesis.speak(utterance);
+            }
+            speechSynthesis.cancel();
+            console.log('speaking ' + speechSynthesis.speaking);
+            """.trimIndent()
+        )
+        onMain { browser.reload() }
+        val console = awaitConsole { messages -> messages.any { it.message.startsWith("Two ") } }
+            .map { it.message }
+            .filter { it.matches(Regex("(speaking|One|Two) .*")) }
+
+        assertEquals(listOf("speaking false", "One canceled", "Two canceled"), console)
+    }
+
     private fun page(title: String) = "<!doctype html><html><head><title>$title</title>" +
         "<script src=\"js/app.js\"></script></head><body></body></html>"
 
@@ -117,5 +175,6 @@ class SiteBrowserTest {
 
     private companion object {
         const val TIMEOUT_MILLIS = 10_000L
+        val SPEECH_DONE = Regex("speech (ended|error .*)")
     }
 }

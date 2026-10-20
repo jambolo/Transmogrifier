@@ -151,7 +151,8 @@ class BrandingTest {
                     onDefaultModel = { _, _ -> },
                     onEffort = {},
                     onMaxToolIterations = { steps = it },
-                    onMaxOutputTokens = {}
+                    onMaxOutputTokens = {},
+                    onAppInstructions = {}
                 )
             }
         }

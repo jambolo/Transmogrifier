@@ -294,6 +294,16 @@ Run opens the generated app in under a second, edits are visible after reload, a
   - a missing page reported.
 - The system prompt still tells the model not to use `alert()`. The dialogs exist for apps that use it anyway.
 
+### Sound and speech (2026-10-19)
+
+- `mediaPlaybackRequiresUserGesture = false`, so Web Audio and media elements play without a tap first. Sounds are synthesized (Web Audio, or `data:`/`blob:` URLs, which the CSP allows); the tools write text only, so there are no audio file types.
+- WebView's `speechSynthesis` doesn't work, so a document-start script (`res/raw/speech_synthesis.js`) replaces it with a standard-shaped `speechSynthesis` / `SpeechSynthesisUtterance`. It talks to `runtime/SpeechBridge`, which wraps Android `TextToSpeech`, through a second web message listener limited to the site's origin; still no JavaScript interface.
+  - Supported: `speak` (queued), `cancel`, `getVoices` with `voiceschanged`, `voice`, `lang`, `rate`, `pitch`, `volume`, and `start`, `end`, `error`, and word `boundary` events. `pause` and `resume` do nothing, because `TextToSpeech` can't pause.
+  - Speech stops when the page navigates or reloads and when the runner is paused; the page gets `error` events with `interrupted`.
+  - The manifest declares a `TTS_SERVICE` query so the engine is visible on Android 11+.
+- The system prompt is unchanged: models already use the standard APIs, and editing the prompt would change the prefix of every existing Claude conversation, which `prefix_mismatch_behavior: "error"` rejects.
+- `SiteBrowserTest` gained two tests (speech start/end with voices and a running `AudioContext`; `cancel`). Passed on a physical device (debug build).
+
 ## Later (out of scope for these phases)
 
 - Export/share a project as a `.zip` or install it as a home-screen shortcut.

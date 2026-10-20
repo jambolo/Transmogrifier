@@ -2,6 +2,7 @@ package io.github.jambolo.transmogrifier.runtime
 
 import android.annotation.SuppressLint
 import android.content.Context
+import android.graphics.Bitmap
 import android.net.Uri
 import android.view.ViewGroup
 import android.webkit.ConsoleMessage as WebConsoleMessage
@@ -36,8 +37,8 @@ import kotlinx.serialization.json.Json
  * origin, so each project has its own storage. Every request outside that origin is blocked, and the console and
  * uncaught errors are collected in [console].
  *
- * The page gets no file or content access and no JavaScript interface. Uncaught errors reach the app through a
- * web message listener limited to the site's origin.
+ * The page gets no file or content access and no JavaScript interface. Uncaught errors and speech requests reach
+ * the app through web message listeners limited to the site's origin.
  */
 // The generated app is JavaScript; it is confined to its origin and process.
 @SuppressLint("SetJavaScriptEnabled")
@@ -57,6 +58,8 @@ class SiteBrowser(context: Context, projectId: ProjectId, siteDir: File) {
     private val _crashed = MutableStateFlow(false)
     val crashed: StateFlow<Boolean> = _crashed.asStateFlow()
 
+    private val speech = SpeechBridge(context)
+
     private val assetLoader = WebViewAssetLoader.Builder()
         .setDomain(domain)
         .addPathHandler("/", SiteFiles(siteDir))
@@ -70,12 +73,14 @@ class SiteBrowser(context: Context, projectId: ProjectId, siteDir: File) {
             allowContentAccess = false
             setGeolocationEnabled(false)
             setSupportMultipleWindows(false)
+            // Games and timers play sounds without a tap first.
+            mediaPlaybackRequiresUserGesture = false
             cacheMode = WebSettings.LOAD_NO_CACHE
         }
         webView.webViewClient = Client()
         webView.webChromeClient = ChromeClient()
         interceptServiceWorkers()
-        installErrorReporter()
+        installScripts()
     }
 
     fun load() = webView.loadUrl("$origin/")
@@ -89,9 +94,12 @@ class SiteBrowser(context: Context, projectId: ProjectId, siteDir: File) {
         _dialog.value = null
     }
 
+    fun stopSpeech() = speech.stop()
+
     fun destroy() {
         _dialog.value?.cancel()
         _dialog.value = null
+        speech.shutdown()
         (webView.parent as? ViewGroup)?.removeView(webView)
         webView.destroy()
     }
@@ -128,10 +136,13 @@ class SiteBrowser(context: Context, projectId: ProjectId, siteDir: File) {
         )
     }
 
-    /** Reports uncaught errors with their stacks; without the needed features they still reach the console. */
+    /**
+     * Reports uncaught errors with their stacks and gives the page speech. Without the needed features, errors still
+     * reach the console, but the page can't speak.
+     */
     // Lint doesn't see the feature check because it's an early return.
     @SuppressLint("RequiresFeature")
-    private fun installErrorReporter() {
+    private fun installScripts() {
         if (!WebViewFeature.isFeatureSupported(WebViewFeature.WEB_MESSAGE_LISTENER) ||
             !WebViewFeature.isFeatureSupported(WebViewFeature.DOCUMENT_START_SCRIPT)
         ) {
@@ -143,6 +154,7 @@ class SiteBrowser(context: Context, projectId: ProjectId, siteDir: File) {
         }
         WebViewCompat.addWebMessageListener(webView, REPORTER_OBJECT, rules, listener)
         WebViewCompat.addDocumentStartJavaScript(webView, REPORTER_SCRIPT, rules)
+        speech.install(webView, rules)
     }
 
     private fun onErrorReport(data: String?) {
@@ -165,6 +177,8 @@ class SiteBrowser(context: Context, projectId: ProjectId, siteDir: File) {
     private inner class Client : WebViewClient() {
         override fun shouldInterceptRequest(view: WebView, request: WebResourceRequest) =
             intercept(request.url)
+
+        override fun onPageStarted(view: WebView, url: String, favicon: Bitmap?) = speech.stop()
 
         override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
             val url = request.url
