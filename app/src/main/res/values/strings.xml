@@ -91,8 +91,20 @@
         <item quantity="one">Connected. Your key works with %1$d model.</item>
         <item quantity="other">Connected. Your key works with %1$d models.</item>
     </plurals>
-    <string name="key_rejected">Your AI service couldn\'t accept this key. Check it and try again.</string>
-    <string name="key_test_failed">Couldn\'t check the connection: %1$s</string>
+    <string name="key_error_missing">No key is saved. Paste your key above and save it.</string>
+    <string name="key_error_invalid">%1$s didn\'t recognize this key. Check that you copied all of it, or create a new one.</string>
+    <string name="key_error_permission">This key isn\'t allowed to use %1$s. Check its permissions in your %1$s account.</string>
+    <string name="key_error_rate_limited">%1$s is getting too many requests from this key. Wait a minute and try again.</string>
+    <string name="key_error_overloaded">%1$s is busy right now. Try again in a few minutes.</string>
+    <string name="key_error_server">%1$s had a problem on its end. Try again later.</string>
+    <string name="key_error_rejected">%1$s refused the request.</string>
+    <string name="key_error_host_not_found">Couldn\'t find the %1$s server. Check that you\'re connected to the internet.</string>
+    <string name="key_error_timed_out">%1$s took too long to respond. Check your connection and try again.</string>
+    <string name="key_error_connection_refused">Couldn\'t connect to %1$s. Check your connection, or try another network.</string>
+    <string name="key_error_insecure">Couldn\'t make a secure connection to %1$s. Check that this device\'s date and time are right, or try another network.</string>
+    <string name="key_error_network">The connection to %1$s failed. Check your connection and try again.</string>
+    <string name="key_error_detail">Error %1$d: %2$s</string>
+    <string name="key_error_code">Error %1$d</string>
     <string name="default_provider">AI service for new apps</string>
     <string name="default_model">Model for new apps</string>
     <string name="effort">Thinking effort</string>

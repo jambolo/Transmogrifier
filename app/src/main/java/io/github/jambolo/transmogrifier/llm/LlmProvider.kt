@@ -1,5 +1,10 @@
 package io.github.jambolo.transmogrifier.llm
 
+import java.io.InterruptedIOException
+import java.net.ConnectException
+import java.net.NoRouteToHostException
+import java.net.UnknownHostException
+import javax.net.ssl.SSLException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
@@ -90,22 +95,58 @@ sealed interface TurnEvent {
     ) : TurnEvent
 }
 
-/** Provider failures in a provider-neutral form, so the engine can decide whether to retry. */
-sealed class LlmException(message: String, cause: Throwable? = null) : Exception(message, cause) {
-    class MissingKey : LlmException("No API key saved")
+/**
+ * Provider failures in a provider-neutral form, so the engine can decide whether to retry and the UI can explain them.
+ * [statusCode] is the HTTP status when the service answered; [detail] is the service's own explanation, which
+ * becomes the message when present.
+ */
+sealed class LlmException(
+    message: String,
+    cause: Throwable?,
+    val statusCode: Int? = null,
+    val detail: String? = null
+) : Exception(detail ?: message, cause) {
+    class MissingKey : LlmException("No API key saved", null)
 
-    class InvalidKey(cause: Throwable) : LlmException(cause.message ?: "Invalid API key", cause)
+    /** The service didn't recognize the key (401). */
+    class InvalidKey(cause: Throwable, statusCode: Int? = null, detail: String? = null) :
+        LlmException(cause.message ?: "Invalid API key", cause, statusCode, detail)
 
-    class RateLimited(cause: Throwable) : LlmException(cause.message ?: "Rate limited", cause)
+    /** The key is valid but isn't allowed to make this request (403). */
+    class PermissionDenied(cause: Throwable, statusCode: Int? = null, detail: String? = null) :
+        LlmException(cause.message ?: "Permission denied", cause, statusCode, detail)
 
-    class Server(cause: Throwable) : LlmException(cause.message ?: "Server error", cause)
+    class RateLimited(cause: Throwable, statusCode: Int? = null, detail: String? = null) :
+        LlmException(cause.message ?: "Rate limited", cause, statusCode, detail)
 
-    class Network(cause: Throwable) : LlmException(cause.message ?: "Network error", cause)
+    /** [overloaded] when the service is too busy to answer rather than failing. */
+    class Server(
+        cause: Throwable,
+        statusCode: Int? = null,
+        detail: String? = null,
+        val overloaded: Boolean = false
+    ) : LlmException(cause.message ?: "Server error", cause, statusCode, detail)
+
+    class Network(cause: Throwable) : LlmException(cause.message ?: "Network error", cause) {
+        val failure: NetworkFailure = generateSequence(cause) { it.cause }
+            .firstNotNullOfOrNull(::networkFailure) ?: NetworkFailure.OTHER
+    }
 
     /** The request itself was rejected (400, 404, ...); retrying unchanged will not help. */
-    class Rejected(cause: Throwable) : LlmException(cause.message ?: "Request rejected", cause)
+    class Rejected(cause: Throwable, statusCode: Int? = null, detail: String? = null) :
+        LlmException(cause.message ?: "Request rejected", cause, statusCode, detail)
 
     val retryable: Boolean get() = this is RateLimited || this is Server || this is Network
+}
+
+enum class NetworkFailure { HOST_NOT_FOUND, TIMED_OUT, CONNECTION_REFUSED, INSECURE, OTHER }
+
+private fun networkFailure(e: Throwable): NetworkFailure? = when (e) {
+    is UnknownHostException -> NetworkFailure.HOST_NOT_FOUND
+    is InterruptedIOException -> NetworkFailure.TIMED_OUT
+    is ConnectException, is NoRouteToHostException -> NetworkFailure.CONNECTION_REFUSED
+    is SSLException -> NetworkFailure.INSECURE
+    else -> null
 }
 
 interface LlmProvider {

@@ -48,7 +48,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.jambolo.transmogrifier.AppContainer
 import io.github.jambolo.transmogrifier.R
 import io.github.jambolo.transmogrifier.llm.Effort
+import io.github.jambolo.transmogrifier.llm.LlmException
 import io.github.jambolo.transmogrifier.llm.ModelInfo
+import io.github.jambolo.transmogrifier.llm.NetworkFailure
 import io.github.jambolo.transmogrifier.llm.ProviderId
 import io.github.jambolo.transmogrifier.settings.Settings
 import io.github.jambolo.transmogrifier.ui.effortLabel
@@ -351,19 +353,63 @@ private fun ApiKeyCard(
                     color = MaterialTheme.colorScheme.primary
                 )
 
-                KeyTest.Rejected -> Text(
-                    stringResource(R.string.key_rejected),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.error
-                )
-
-                is KeyTest.Failed -> Text(
-                    stringResource(R.string.key_test_failed, test.message),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.error
-                )
+                is KeyTest.Failed -> {
+                    Text(
+                        keyErrorMessage(provider, test.error),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                    keyErrorDetail(test.error)?.let {
+                        Text(
+                            it,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
             }
         }
+    }
+}
+
+@Composable
+private fun keyErrorMessage(provider: ProviderId, error: LlmException): String {
+    val label = providerLabel(provider)
+    return when (error) {
+        is LlmException.MissingKey -> stringResource(R.string.key_error_missing)
+        is LlmException.InvalidKey -> stringResource(R.string.key_error_invalid, label)
+        is LlmException.PermissionDenied -> stringResource(R.string.key_error_permission, label)
+        is LlmException.RateLimited -> stringResource(R.string.key_error_rate_limited, label)
+        is LlmException.Server -> stringResource(
+            if (error.overloaded) R.string.key_error_overloaded else R.string.key_error_server,
+            label
+        )
+        is LlmException.Rejected -> stringResource(R.string.key_error_rejected, label)
+        is LlmException.Network -> stringResource(
+            when (error.failure) {
+                NetworkFailure.HOST_NOT_FOUND -> R.string.key_error_host_not_found
+                NetworkFailure.TIMED_OUT -> R.string.key_error_timed_out
+                NetworkFailure.CONNECTION_REFUSED -> R.string.key_error_connection_refused
+                NetworkFailure.INSECURE -> R.string.key_error_insecure
+                NetworkFailure.OTHER -> R.string.key_error_network
+            },
+            label
+        )
+    }
+}
+
+/** The service's own explanation and status, or the underlying cause of an unclassified network failure. */
+@Composable
+private fun keyErrorDetail(error: LlmException): String? {
+    val status = error.statusCode
+    val detail = error.detail
+    return when {
+        error is LlmException.Network ->
+            error.message.takeIf { error.failure == NetworkFailure.OTHER }
+        status != null && detail != null ->
+            stringResource(R.string.key_error_detail, status, detail)
+        status != null -> stringResource(R.string.key_error_code, status)
+        else -> detail
     }
 }
 

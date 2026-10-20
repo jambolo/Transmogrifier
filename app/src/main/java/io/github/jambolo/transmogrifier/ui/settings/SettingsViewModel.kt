@@ -22,9 +22,7 @@ sealed interface KeyTest {
 
     data class Passed(val modelCount: Int) : KeyTest
 
-    data object Rejected : KeyTest
-
-    data class Failed(val message: String) : KeyTest
+    data class Failed(val error: LlmException) : KeyTest
 }
 
 data class SettingsUiState(
@@ -70,10 +68,8 @@ class SettingsViewModel(
                 val list = providers.getValue(provider).listModels()
                 models.update { it + (provider to list) }
                 KeyTest.Passed(list.size)
-            } catch (e: LlmException.InvalidKey) {
-                KeyTest.Rejected
             } catch (e: LlmException) {
-                KeyTest.Failed(e.message ?: e.javaClass.simpleName)
+                KeyTest.Failed(e)
             }
             keyTests.update { it + (provider to result) }
         }

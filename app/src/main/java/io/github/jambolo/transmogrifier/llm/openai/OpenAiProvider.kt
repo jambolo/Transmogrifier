@@ -120,18 +120,33 @@ class OpenAiProvider(
         inline fun <T> translateErrors(block: () -> T): T = try {
             block()
         } catch (e: UnauthorizedException) {
-            throw LlmException.InvalidKey(e)
+            throw LlmException.InvalidKey(e, e.statusCode(), errorField(e, "message"))
         } catch (e: PermissionDeniedException) {
-            throw LlmException.InvalidKey(e)
+            throw LlmException.PermissionDenied(e, e.statusCode(), errorField(e, "message"))
         } catch (e: RateLimitException) {
-            throw LlmException.RateLimited(e)
+            // An exhausted quota is also a 429, but waiting won't fix it.
+            throw if (errorField(e, "code") == "insufficient_quota") {
+                LlmException.Rejected(e, e.statusCode(), errorField(e, "message"))
+            } else {
+                LlmException.RateLimited(e, e.statusCode(), errorField(e, "message"))
+            }
         } catch (e: InternalServerException) {
-            throw LlmException.Server(e)
+            throw LlmException.Server(
+                e,
+                e.statusCode(),
+                errorField(e, "message"),
+                overloaded = e.statusCode() == 503
+            )
         } catch (e: SseException) {
             // An error sent mid-stream after a 200, such as an exhausted quota.
-            throw streamError(errorCode(e), e.message.orEmpty(), e)
+            throw streamError(errorField(e, "code"), errorField(e, "message"), e)
         } catch (e: OpenAIServiceException) {
-            throw if (e.statusCode() >= 500) LlmException.Server(e) else LlmException.Rejected(e)
+            val detail = errorField(e, "message")
+            throw if (e.statusCode() >= 500) {
+                LlmException.Server(e, e.statusCode(), detail)
+            } else {
+                LlmException.Rejected(e, e.statusCode(), detail)
+            }
         } catch (e: OpenAIIoException) {
             throw LlmException.Network(e)
         } catch (e: IOException) {
@@ -141,21 +156,22 @@ class OpenAiProvider(
         /** Only errors known to be transient are retried; quota and request errors fail at once. */
         fun streamError(
             code: String?,
-            message: String,
+            message: String?,
             cause: Throwable = IllegalStateException(message)
         ): LlmException = when (code) {
-            "rate_limit_exceeded" -> LlmException.RateLimited(cause)
-            "server_error", "internal_error", "server_is_overloaded", "slow_down" ->
-                LlmException.Server(cause)
-            else -> LlmException.Rejected(cause)
+            "rate_limit_exceeded" -> LlmException.RateLimited(cause, detail = message)
+            "server_is_overloaded", "slow_down" ->
+                LlmException.Server(cause, detail = message, overloaded = true)
+            "server_error", "internal_error" -> LlmException.Server(cause, detail = message)
+            else -> LlmException.Rejected(cause, detail = message)
         }
 
-        fun errorCode(e: SseException): String? {
+        fun errorField(e: OpenAIServiceException, name: String): String? {
             val body = runCatching {
                 Json.parseToJsonElement(jsonMapper().writeValueAsString(e.body())).jsonObject
             }.getOrNull() ?: return null
             val error = body["error"] as? JsonObject ?: body
-            return (error["code"] as? JsonPrimitive)?.contentOrNull
+            return (error[name] as? JsonPrimitive)?.contentOrNull
         }
     }
 }

@@ -188,7 +188,11 @@ class AgentEngine(
             }
             throw e
         } catch (e: LlmException) {
-            val kind = if (e is LlmException.MissingKey || e is LlmException.InvalidKey) {
+            val kind = if (
+                e is LlmException.MissingKey ||
+                e is LlmException.InvalidKey ||
+                e is LlmException.PermissionDenied
+            ) {
                 NoticeKind.AUTH_FAILED
             } else {
                 NoticeKind.FAILED

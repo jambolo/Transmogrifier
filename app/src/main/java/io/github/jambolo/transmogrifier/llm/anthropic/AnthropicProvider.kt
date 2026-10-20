@@ -8,6 +8,7 @@ import com.anthropic.errors.PermissionDeniedException
 import com.anthropic.errors.RateLimitException
 import com.anthropic.errors.UnauthorizedException
 import com.anthropic.helpers.BetaMessageAccumulator
+import com.anthropic.models.ErrorType
 import io.github.jambolo.transmogrifier.llm.LlmException
 import io.github.jambolo.transmogrifier.llm.LlmProvider
 import io.github.jambolo.transmogrifier.llm.ModelInfo
@@ -15,6 +16,7 @@ import io.github.jambolo.transmogrifier.llm.ProviderId
 import io.github.jambolo.transmogrifier.llm.TurnEvent
 import io.github.jambolo.transmogrifier.llm.TurnRequest
 import java.io.IOException
+import kotlin.jvm.optionals.getOrNull
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.coroutineScope
@@ -97,18 +99,30 @@ class AnthropicProvider(
         inline fun <T> translateErrors(block: () -> T): T = try {
             block()
         } catch (e: UnauthorizedException) {
-            throw LlmException.InvalidKey(e)
+            throw LlmException.InvalidKey(e, e.statusCode(), detail(e))
         } catch (e: PermissionDeniedException) {
-            throw LlmException.InvalidKey(e)
+            throw LlmException.PermissionDenied(e, e.statusCode(), detail(e))
         } catch (e: RateLimitException) {
-            throw LlmException.RateLimited(e)
+            throw LlmException.RateLimited(e, e.statusCode(), detail(e))
         } catch (e: AnthropicServiceException) {
             // 5xx and 529 overloaded, including errors sent mid-stream.
-            throw if (e.statusCode() >= 500) LlmException.Server(e) else LlmException.Rejected(e)
+            val status = e.statusCode()
+            throw if (status >= 500) {
+                val overloaded =
+                    status == 529 || e.errorType().getOrNull() == ErrorType.OVERLOADED_ERROR
+                LlmException.Server(e, status, detail(e), overloaded)
+            } else {
+                LlmException.Rejected(e, status, detail(e))
+            }
         } catch (e: AnthropicIoException) {
             throw LlmException.Network(e)
         } catch (e: IOException) {
             throw LlmException.Network(e)
         }
+
+        /** The `error.message` of the response body, without the status and JSON of the SDK's message. */
+        fun detail(e: AnthropicServiceException): String? =
+            e.body().asObject().getOrNull()?.get("error")?.asObject()?.getOrNull()
+                ?.get("message")?.asString()?.getOrNull()
     }
 }
