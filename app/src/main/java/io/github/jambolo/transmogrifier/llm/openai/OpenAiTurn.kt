@@ -10,6 +10,8 @@ import com.openai.models.responses.ResponseCreateParams
 import com.openai.models.responses.ResponseIncludable
 import com.openai.models.responses.ResponseStatus
 import com.openai.models.responses.ResponseStreamEvent
+import com.openai.models.responses.Tool
+import com.openai.models.responses.WebSearchTool
 import io.github.jambolo.transmogrifier.llm.Effort
 import io.github.jambolo.transmogrifier.llm.StopReason
 import io.github.jambolo.transmogrifier.llm.ToolDefinition
@@ -31,6 +33,10 @@ internal object OpenAiRequests {
     // Explicit implicit-mode caching is only accepted from GPT-5.6 on; older models cache automatically.
     private val cacheOptionsModels = Regex("""gpt-(6(\.\d+)?|5\.6)-.*""")
 
+    private val webSearch = Tool.ofWebSearch(
+        WebSearchTool.builder().type(WebSearchTool.Type.WEB_SEARCH).build()
+    )
+
     /**
      * History is replayed statelessly (`store = false`): every earlier input and output item is sent again,
      * including encrypted reasoning, so nothing depends on server-side conversation state.
@@ -42,7 +48,8 @@ internal object OpenAiRequests {
             .model(request.model)
             .instructions(request.systemPrompt)
             .input(JsonValue.fromJsonNode(mapper.readTree(items.toString())))
-            .tools(request.tools.map { com.openai.models.responses.Tool.ofFunction(tool(it)) })
+            // OpenAI runs web search itself; it stays constant so the cached prefix holds.
+            .tools(request.tools.map { Tool.ofFunction(tool(it)) } + webSearch)
             .maxOutputTokens(request.maxOutputTokens.toLong())
             .store(false)
             .addInclude(ResponseIncludable.REASONING_ENCRYPTED_CONTENT)

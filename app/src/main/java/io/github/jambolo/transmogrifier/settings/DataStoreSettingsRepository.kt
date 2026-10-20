@@ -26,6 +26,7 @@ internal data class StoredSettings(
     val maxToolIterations: Int = 30,
     val maxOutputTokens: Int = 64_000,
     val appInstructions: String = "",
+    val allowAppNetwork: Boolean = false,
     val encryptedKeys: Map<ProviderId, String> = emptyMap(),
     val keyHints: Map<ProviderId, String> = emptyMap()
 ) {
@@ -36,6 +37,7 @@ internal data class StoredSettings(
         maxToolIterations,
         maxOutputTokens,
         appInstructions,
+        allowAppNetwork,
         keyHints
     )
 }
@@ -75,7 +77,8 @@ class DataStoreSettingsRepository internal constructor(
                 effort = new.effort,
                 maxToolIterations = new.maxToolIterations,
                 maxOutputTokens = new.maxOutputTokens,
-                appInstructions = new.appInstructions
+                appInstructions = new.appInstructions,
+                allowAppNetwork = new.allowAppNetwork
             )
         }
     }

@@ -15,6 +15,8 @@ import com.anthropic.models.beta.messages.BetaThinkingConfigAdaptive
 import com.anthropic.models.beta.messages.BetaThinkingPrefixMismatchBehavior
 import com.anthropic.models.beta.messages.BetaTool
 import com.anthropic.models.beta.messages.BetaToolUnion
+import com.anthropic.models.beta.messages.BetaWebFetchTool20250910
+import com.anthropic.models.beta.messages.BetaWebSearchTool20250305
 import com.anthropic.models.beta.messages.MessageCreateParams
 import io.github.jambolo.transmogrifier.llm.Effort
 import io.github.jambolo.transmogrifier.llm.StopReason
@@ -57,15 +59,20 @@ internal object AnthropicRequests {
             .systemOfBetaTextBlockParams(
                 listOf(BetaTextBlockParam.builder().text(request.systemPrompt).build())
             )
-            .tools(
-                request.tools.map(::tool).map {
-                    BetaToolUnion.ofBetaTool(it)
-                }
-            )
+            // Anthropic runs the web tools itself; they stay constant so the cached prefix holds.
+            .tools(request.tools.map { BetaToolUnion.ofBetaTool(tool(it)) } + webTools)
+            .addBeta(WEB_FETCH_BETA)
             // Automatic caching of the longest stable prefix: tools, system prompt, and history.
             .cacheControl(BetaCacheControlEphemeral.builder().build())
             // Sent as a raw tree so history is replayed verbatim, without a typed round-trip.
-            .messages(rawJson(JsonArray(request.history.items + userMessage(request.input))))
+            .messages(
+                rawJson(
+                    JsonArray(
+                        request.history.items.map(::withoutUnresolvedServerTools) +
+                            userMessages(request.input)
+                    )
+                )
+            )
         if (model in fallbackModels) {
             builder.addBeta(
                 AnthropicBeta.SERVER_SIDE_FALLBACK_2026_07_01
@@ -88,6 +95,20 @@ internal object AnthropicRequests {
         return builder.thinking(thinking.build()).build()
     }
 
+    private val WEB_FETCH_BETA = AnthropicBeta.of("web-fetch-2025-09-10")
+
+    // Capped so a runaway search loop can't run up the bill.
+    private const val MAX_WEB_USES = 5L
+
+    private val webTools = listOf(
+        BetaToolUnion.ofWebSearchTool20250305(
+            BetaWebSearchTool20250305.builder().maxUses(MAX_WEB_USES).build()
+        ),
+        BetaToolUnion.ofWebFetchTool20250910(
+            BetaWebFetchTool20250910.builder().maxUses(MAX_WEB_USES).build()
+        )
+    )
+
     private fun tool(definition: ToolDefinition): BetaTool = BetaTool.builder()
         .name(definition.name)
         .description(definition.description)
@@ -105,6 +126,10 @@ internal object AnthropicRequests {
         Effort.XHIGH -> BetaOutputConfig.Effort.XHIGH
         Effort.MAX -> BetaOutputConfig.Effort.MAX
     }
+
+    /** The messages to append to history; none when resuming a paused turn. */
+    fun userMessages(input: TurnInput): List<JsonObject> =
+        if (input.resume) emptyList() else listOf(userMessage(input))
 
     /** The user message in wire format: tool results first, as the API requires, then any text. */
     fun userMessage(input: TurnInput): JsonObject = buildJsonObject {
@@ -144,6 +169,26 @@ internal object AnthropicRequests {
         return JsonObject(param + ("content" to JsonArray(kept)))
     }
 
+    /**
+     * A turn that also calls a client tool can end before a server tool's result arrives, and the API rejects
+     * replaying that call without its result. Only the request drops it; the stored history is unchanged.
+     */
+    fun withoutUnresolvedServerTools(message: JsonElement): JsonElement {
+        if (message !is JsonObject) return message
+        val content = message["content"] as? JsonArray ?: return message
+        val resolved = content.mapNotNull {
+            (it as? JsonObject)?.takeIf { block ->
+                block.type?.endsWith("_tool_result") == true
+            }?.get("tool_use_id")?.jsonPrimitive?.content
+        }.toSet()
+        val kept = content.filterNot {
+            it.type == "server_tool_use" &&
+                (it as JsonObject).getValue("id").jsonPrimitive.content !in resolved
+        }
+        if (kept.size == content.size) return message
+        return JsonObject(message + ("content" to JsonArray(kept)))
+    }
+
     private val JsonElement.type get() = (this as? JsonObject)?.get("type")?.jsonPrimitive?.content
 
     fun stopReason(reason: BetaStopReason?) = when (reason) {
@@ -151,6 +196,7 @@ internal object AnthropicRequests {
         BetaStopReason.TOOL_USE -> StopReason.TOOL_USE
         BetaStopReason.MAX_TOKENS -> StopReason.MAX_TOKENS
         BetaStopReason.REFUSAL -> StopReason.REFUSAL
+        BetaStopReason.PAUSE_TURN -> StopReason.PAUSED
         else -> StopReason.OTHER
     }
 
@@ -206,7 +252,7 @@ internal class AnthropicTurnMapper(private val request: TurnRequest) {
         val hasContent = assistant["content"]?.jsonArray?.isNotEmpty() == true
         // A refusal before any output leaves nothing to append; an empty assistant turn would be rejected later.
         val items = if (hasContent) {
-            request.history.items + AnthropicRequests.userMessage(request.input) + assistant
+            request.history.items + AnthropicRequests.userMessages(request.input) + assistant
         } else {
             request.history.items
         }

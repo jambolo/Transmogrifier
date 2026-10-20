@@ -56,7 +56,7 @@ From the menu next to each app on the projects screen, you can rename or delete 
 
 - API keys are encrypted with a key held in the Android Keystore and stored only on the device. They are sent only to the provider they belong to.
 - Generated apps run in a separate process that never loads the API keys.
-- Generated apps can't use the network: requests to other sites are blocked. Links to other sites open in your regular browser, after you confirm.
+- Generated apps can't use the network by default: requests to other sites are blocked. The "Let apps use the network" checkbox in Advanced settings lets them fetch data from, and show images and media from, other https sites. Plain http, remote scripts, styles, and fonts, and form posts stay blocked. Links to other sites open in your regular browser, after you confirm.
 - Each generated app has its own storage, so apps can't read each other's saved data.
 
 ## Status

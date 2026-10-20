@@ -70,6 +70,7 @@ class AgentEngine(
             else -> TurnInput(pending.toolResults, text)
         }
         val instructions = settings.appInstructions.trim()
+        val network = settings.allowAppNetwork
         val workspace = store.workspace(projectId)
         val executor = ToolExecutor(workspace)
 
@@ -83,8 +84,14 @@ class AgentEngine(
                 // Changed instructions ride on the next user text so the system prompt, and with it the cached
                 // prefix and Claude's thinking blocks, never changes.
                 val inputText = input.text
-                val sent = if (inputText != null && instructions != conversation.instructions) {
-                    input.copy(text = withInstructions(instructions, inputText))
+                // The network setting is announced the same way; the system prompt describes the default (off).
+                val sent = if (inputText != null) {
+                    var announced = inputText
+                    if (instructions != conversation.instructions) {
+                        announced = withInstructions(instructions, announced)
+                    }
+                    if (network != conversation.network) announced = withNetwork(network, announced)
+                    input.copy(text = announced)
                 } else {
                     input
                 }
@@ -106,7 +113,8 @@ class AgentEngine(
                         instructions
                     } else {
                         conversation.instructions
-                    }
+                    },
+                    network = if (inputText != null && appended) network else conversation.network
                 )
                 store.saveConversation(projectId, conversation)
                 if (turn.text.isNotBlank()) {
@@ -124,6 +132,10 @@ class AgentEngine(
                 emit(GenerationEvent.TurnPersisted)
 
                 val stop = turn.completed.stopReason
+                if (stop == StopReason.PAUSED && turn.toolCalls.isEmpty()) {
+                    input = TurnInput(resume = true)
+                    continue
+                }
                 if (turn.toolCalls.isEmpty()) {
                     when (stop) {
                         StopReason.MAX_TOKENS -> notice(projectId, NoticeKind.TRUNCATED)
@@ -275,6 +287,17 @@ class AgentEngine(
 
     private fun fixErrorsPrompt(log: String) =
         "Running the app produced these errors in the browser console. Fix their causes.\n\n$log"
+
+    private fun withNetwork(allowed: Boolean, text: String) = if (allowed) {
+        "The user turned on network access for their apps, overriding the system prompt: " +
+            "the app may now fetch data over https (fetch, XMLHttpRequest, WebSocket) and " +
+            "show images and media from any https URL. Remote scripts, stylesheets, fonts, " +
+            "plain http, and form posts are still blocked. The remote server must allow " +
+            "cross-origin requests (CORS).\n\n$text"
+    } else {
+        "The user turned network access for their apps off again. The system prompt applies: " +
+            "no network requests.\n\n$text"
+    }
 
     private fun withInstructions(instructions: String, text: String) = if (instructions.isEmpty()) {
         "The user removed their instructions for all of their apps. Earlier ones no longer apply.\n\n$text"

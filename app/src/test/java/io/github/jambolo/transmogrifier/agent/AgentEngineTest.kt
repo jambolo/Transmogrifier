@@ -204,6 +204,29 @@ class AgentEngineTest {
     }
 
     @Test
+    fun networkSettingIsAnnouncedWhenItChanges() = runTest {
+        val settings = FakeSettingsRepository(Settings())
+        val (engine, id) = engine(
+            ScriptedProvider { listOf(completed(it, StopReason.END_TURN)) },
+            settingsRepository = settings
+        )
+        engine.generate(id, "A counter").toList()
+        settings.update { it.copy(allowAppNetwork = true) }
+        engine.generate(id, "Show live scores").toList()
+        engine.generate(id, "Make it blue").toList()
+        settings.update { it.copy(allowAppNetwork = false) }
+        engine.generate(id, "Add a reset").toList()
+
+        val texts = requests.map { it.input.text!! }
+        assertEquals("A counter", texts[0])
+        assertTrue(texts[1].startsWith("The user turned on network access"))
+        assertTrue(texts[1].endsWith("\n\nShow live scores"))
+        assertEquals("Make it blue", texts[2])
+        assertTrue(texts[3].startsWith("The user turned network access for their apps off"))
+        assertTrue(requests.all { it.systemPrompt == AgentPrompt.SYSTEM })
+    }
+
+    @Test
     fun truncatedToolCallsAreNotRun() = runTest {
         val (engine, id) = engine(
             ScriptedProvider { request ->

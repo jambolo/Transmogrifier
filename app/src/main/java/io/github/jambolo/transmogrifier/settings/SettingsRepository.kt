@@ -15,6 +15,8 @@ data class Settings(
     val maxOutputTokens: Int = 64_000,
     /** The user's standing instructions for every app; blank for none. */
     val appInstructions: String = "",
+    /** Whether a running app may make https requests to other sites. */
+    val allowAppNetwork: Boolean = false,
     /** Last four characters of each saved key, for display. Keys never leave `settings` and `llm`. */
     val apiKeyHints: Map<ProviderId, String> = emptyMap()
 ) {

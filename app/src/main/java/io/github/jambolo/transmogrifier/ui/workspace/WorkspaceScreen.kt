@@ -74,6 +74,7 @@ import io.github.jambolo.transmogrifier.project.Project
 import io.github.jambolo.transmogrifier.project.ProjectId
 import io.github.jambolo.transmogrifier.project.TranscriptEntry
 import io.github.jambolo.transmogrifier.runtime.RunApp
+import io.github.jambolo.transmogrifier.settings.Settings
 import io.github.jambolo.transmogrifier.ui.providerLabel
 import io.github.jambolo.transmogrifier.ui.theme.TransmogrifierTheme
 import io.github.jambolo.transmogrifier.ui.toolLabel
@@ -95,6 +96,8 @@ fun WorkspaceRoute(
         )
     }
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val settings by container.settingsRepository.settings
+        .collectAsStateWithLifecycle(Settings())
     val runner = rememberLauncherForActivityResult(RunApp) { result ->
         result?.let { viewModel.onRunFinished(it.errorLog, it.fixErrors) }
     }
@@ -102,7 +105,9 @@ fun WorkspaceRoute(
     WorkspaceScreen(
         state,
         onBack = onBack,
-        onRun = { state.project?.let(runner::launch) },
+        onRun = {
+            state.project?.let { runner.launch(RunApp.Input(it, settings.allowAppNetwork)) }
+        },
         onSend = viewModel::send,
         onStop = viewModel::stop,
         onFixErrors = viewModel::fixErrors,

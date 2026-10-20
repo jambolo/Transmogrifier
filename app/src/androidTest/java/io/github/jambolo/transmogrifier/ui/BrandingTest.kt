@@ -152,7 +152,8 @@ class BrandingTest {
                     onEffort = {},
                     onMaxToolIterations = { steps = it },
                     onMaxOutputTokens = {},
-                    onAppInstructions = {}
+                    onAppInstructions = {},
+                    onAllowAppNetwork = {}
                 )
             }
         }

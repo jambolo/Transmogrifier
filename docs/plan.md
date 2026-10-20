@@ -304,6 +304,24 @@ Run opens the generated app in under a second, edits are visible after reload, a
 - The system prompt is unchanged: models already use the standard APIs, and editing the prompt would change the prefix of every existing Claude conversation, which `prefix_mismatch_behavior: "error"` rejects.
 - `SiteBrowserTest` gained two tests (speech start/end with voices and a running `AudioContext`; `cancel`). Passed on a physical device (debug build).
 
+### Web access for the model (2026-10-24)
+
+- Both providers send their server-side web tools with every request: Claude `web_search_20250305` and `web_fetch_20250910` (beta `web-fetch-2025-09-10`, each capped at 5 uses per request), OpenAI `web_search`. The providers run them, so the app has no fetch code and no new permission. The generated app's network contract is unchanged.
+- The tools are constants inside each provider, so the prefix stays byte-identical between requests. The system prompt is unchanged, for the reason above.
+- Claude may stop a long search loop with `pause_turn`. It maps to `StopReason.PAUSED`, and the engine resumes with `TurnInput(resume = true)`: the history is resent with no new user message.
+- Server tool blocks (`server_tool_use`, `web_search_tool_result`) and OpenAI `web_search_call` items are stored in history unchanged. Neither provider's tool-call extraction sees them, so `ToolExecutor` never does.
+- Existing Claude conversations that contain thinking blocks were created without these tools. Adding tools changes their prefix, so `prefix_mismatch_behavior: "error"` may reject them. Unverified on a device.
+- Not yet verified with a real key: org-level enablement of web search/fetch, and the R8 release build.
+
+### Network access for generated apps (2026-10-24)
+
+- Supersedes the self-contained contract and the "Requests outside that origin get a 403" rule above. `SiteBrowser.intercept` now returns `null` for `https` requests to other hosts, so the WebView fetches them itself. Other schemes still get a 403.
+- The CSP adds `connect-src 'self' https: wss:`, `img-src` and `media-src` with `https:`. `default-src` is unchanged, so remote scripts, styles, and fonts stay blocked: no third-party code runs with the page's storage. `form-action 'self'` still blocks form posts.
+- Cross-origin `fetch` still needs the target's CORS headers. The page's origin is `https://<project id>.appassets.androidplatform.net`.
+- It is a checkbox in Advanced settings ("Let apps use the network", `Settings.allowAppNetwork`, off by default). `WorkspaceRoute` reads it when Run is tapped and passes it to `RunnerActivity` as an intent extra (`RunApp.Input`), because `:runner` never builds `AppContainer`. `SiteBrowser(allowNetwork)` then picks the intercept rule and CSP; with it off, everything outside the asset domain is blocked as before. It applies from the next run, not to a running app.
+- The per-project allowlist under "Later" is still open. The system prompt still says network requests are blocked (editing it would break existing Claude conversations), so the model avoids them unless the user asks, or says otherwise in Advanced instructions.
+- Not run on a device: `connectedAndroidTest` erases saved keys. `SiteBrowserTest` covers only the default (blocked) case.
+
 ## Later (out of scope for these phases)
 
 - Export/share a project as a `.zip` or install it as a home-screen shortcut.

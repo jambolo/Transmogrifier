@@ -24,6 +24,7 @@ out/
 # Android
 *.apk
 *.aab
+/app/release/
 
 # OS / other editors
 .vscode/

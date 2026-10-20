@@ -10,8 +10,11 @@ import androidx.activity.ComponentActivity
 import androidx.activity.addCallback
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -57,7 +60,8 @@ class RunnerActivity : ComponentActivity() {
         enableEdgeToEdge()
 
         val siteDir = FileProjectStore.siteDir(AppContainer.projectsRoot(this), projectId)
-        val browser = SiteBrowser(this, projectId, siteDir).also { browser = it }
+        val allowNetwork = intent.getBooleanExtra(RunApp.EXTRA_NETWORK, false)
+        val browser = SiteBrowser(this, projectId, siteDir, allowNetwork).also { browser = it }
         browser.load()
         lifecycleScope.launch {
             browser.console.collect { setResult(RESULT_OK, RunApp.result(it.errorLog(), false)) }
@@ -134,6 +138,7 @@ private fun RunnerContent(
     val console by browser.console.collectAsStateWithLifecycle()
     val dialog by browser.dialog.collectAsStateWithLifecycle()
     val crashed by browser.crashed.collectAsStateWithLifecycle()
+    val networkBlocked by browser.networkBlocked.collectAsStateWithLifecycle()
     RunnerScreen(
         projectName,
         console,
@@ -149,7 +154,22 @@ private fun RunnerContent(
                 )
             }
         } else {
-            AndroidView(factory = { browser.webView }, modifier = Modifier.fillMaxSize())
+            Column(Modifier.fillMaxSize()) {
+                if (networkBlocked) {
+                    Text(
+                        stringResource(R.string.app_network_blocked),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onErrorContainer,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(MaterialTheme.colorScheme.errorContainer)
+                            .padding(12.dp)
+                    )
+                }
+                AndroidView(factory = {
+                    browser.webView
+                }, modifier = Modifier.weight(1f).fillMaxWidth())
+            }
         }
     }
     dialog?.let {

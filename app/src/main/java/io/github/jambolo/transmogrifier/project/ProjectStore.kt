@@ -87,7 +87,8 @@ enum class NoticeKind {
 data class Conversation(
     val history: ProviderHistory,
     val pending: TurnInput? = null,
-    val instructions: String = ""
+    val instructions: String = "",
+    val network: Boolean = false
 )
 
 interface ProjectStore {

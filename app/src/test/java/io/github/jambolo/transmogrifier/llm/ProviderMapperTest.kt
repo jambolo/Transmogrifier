@@ -36,6 +36,37 @@ class ProviderMapperTest {
             input = TurnInput(text = "A greeting page")
         )
 
+    @Test
+    fun anthropicRequestIncludesWebTools() {
+        val params = AnthropicRequests.params(request(ProviderId.ANTHROPIC))
+        val tools = params.tools().get()
+        assertEquals(AgentPrompt.TOOLS.size + 2, tools.size)
+        assertEquals(true, tools[tools.size - 2].isWebSearchTool20250305())
+        assertEquals(true, tools.last().isWebFetchTool20250910())
+    }
+
+    @Test
+    fun anthropicPauseTurnResumesWithoutUserMessage() {
+        assertEquals(
+            StopReason.PAUSED,
+            AnthropicRequests.stopReason(
+                com.anthropic.models.beta.messages.BetaStopReason.PAUSE_TURN
+            )
+        )
+        assertEquals(
+            emptyList<JsonObject>(),
+            AnthropicRequests.userMessages(TurnInput(resume = true))
+        )
+    }
+
+    @Test
+    fun openAiRequestIncludesWebSearch() {
+        val tools = OpenAiRequests.params(request(ProviderId.OPENAI)).tools().get()
+        assertEquals(AgentPrompt.TOOLS.size + 1, tools.size)
+        assertEquals(true, tools.last().isWebSearch())
+        assertEquals(emptyList<JsonObject>(), OpenAiRequests.inputItems(TurnInput(resume = true)))
+    }
+
     private val expectedCall = TurnEvent.ToolCall(
         "toolu_01",
         "write_file",
@@ -130,6 +161,82 @@ class ProviderMapperTest {
         assertEquals(
             emptyList<TurnEvent.ToolCall>(),
             AnthropicRequests.toolCalls(AnthropicRequests.assistantMessage(message))
+        )
+    }
+
+    @Test
+    fun anthropicKeepsWebSearchResults() {
+        val message = com.anthropic.core.jsonMapper().readValue(
+            """{"id":"msg_03","type":"message","role":"assistant","model":"claude-opus-5-5",
+               "content":[
+                 {"type":"server_tool_use","id":"srvtoolu_1","name":"web_search",
+                  "input":{"query":"fetch cors"}},
+                 {"type":"web_search_tool_result","tool_use_id":"srvtoolu_1","content":[
+                   {"type":"web_search_result","url":"https://example.com","title":"T",
+                    "encrypted_content":"enc","page_age":null}]},
+                 {"type":"text","text":"Because of CORS."}],
+               "stop_reason":"end_turn","stop_sequence":null,
+               "usage":{"input_tokens":10,"output_tokens":5}}""",
+            BetaMessage::class.java
+        )
+        val content = AnthropicRequests.assistantMessage(message).getValue("content").jsonArray
+        assertEquals(
+            listOf("server_tool_use", "web_search_tool_result", "text"),
+            content.map { it.jsonObject.getValue("type").jsonPrimitive.content }
+        )
+    }
+
+    @Test
+    fun anthropicStreamKeepsWebSearchResults() {
+        val accumulator = BetaMessageAccumulator.create()
+        listOf(
+            """{"type":"message_start","message":{"id":"msg_04","type":"message","role":"assistant",
+               "model":"claude-opus-5-5","content":[],"stop_reason":null,"stop_sequence":null,
+               "usage":{"input_tokens":10,"output_tokens":1}}}""",
+            """{"type":"content_block_start","index":0,"content_block":{"type":"server_tool_use",
+               "id":"srvtoolu_1","name":"web_search","input":{}}}""",
+            """{"type":"content_block_delta","index":0,"delta":{"type":"input_json_delta",
+               "partial_json":"{\"query\": \"fetch cors\"}"}}""",
+            """{"type":"content_block_stop","index":0}""",
+            """{"type":"content_block_start","index":1,"content_block":{
+               "type":"web_search_tool_result","tool_use_id":"srvtoolu_1","content":[
+               {"type":"web_search_result","url":"https://example.com","title":"T",
+                "encrypted_content":"enc","page_age":null}]}}""",
+            """{"type":"content_block_stop","index":1}""",
+            """{"type":"content_block_start","index":2,"content_block":{"type":"text","text":""}}""",
+            """{"type":"content_block_delta","index":2,"delta":{"type":"text_delta",
+               "text":"Because of CORS."}}""",
+            """{"type":"content_block_stop","index":2}""",
+            """{"type":"message_delta","delta":{"stop_reason":"end_turn","stop_sequence":null},
+               "usage":{"output_tokens":5}}""",
+            """{"type":"message_stop"}"""
+        ).forEach { accumulator.accumulate(AnthropicRequests.parseEvent(it)) }
+        val content = AnthropicRequests.assistantMessage(accumulator.message())
+            .getValue("content").jsonArray
+        assertEquals(
+            listOf("server_tool_use", "web_search_tool_result", "text"),
+            content.map { it.jsonObject.getValue("type").jsonPrimitive.content }
+        )
+    }
+
+    @Test
+    fun anthropicReplayDropsUnresolvedServerToolCalls() {
+        val assistant = Json.parseToJsonElement(
+            """{"role":"assistant","content":[
+                 {"type":"tool_use","id":"toolu_1","name":"list_files","input":{}},
+                 {"type":"server_tool_use","id":"srvtoolu_1","name":"web_search","input":{}},
+                 {"type":"server_tool_use","id":"srvtoolu_2","name":"web_search","input":{}},
+                 {"type":"web_search_tool_result","tool_use_id":"srvtoolu_2","content":[]}]}"""
+        ).jsonObject
+        val content = AnthropicRequests.withoutUnresolvedServerTools(assistant)
+            .jsonObject.getValue("content").jsonArray
+        assertEquals(
+            listOf("tool_use", "server_tool_use", "web_search_tool_result"),
+            content.map { it.jsonObject.getValue("type").jsonPrimitive.content }
+        )
+        assertEquals(
+            "srvtoolu_2",
+            content[1].jsonObject.getValue("id").jsonPrimitive.content
         )
     }
 

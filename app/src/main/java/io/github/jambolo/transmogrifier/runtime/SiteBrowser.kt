@@ -34,15 +34,21 @@ import kotlinx.serialization.json.Json
 
 /**
  * A [WebView] that runs one project's generated site. The site is served from [siteDir] over https on its own
- * origin, so each project has its own storage. Every request outside that origin is blocked, and the console and
- * uncaught errors are collected in [console].
+ * origin, so each project has its own storage. Requests outside that origin are blocked unless [allowNetwork], and
+ * then limited to https data, images, and media (scripts, styles, and fonts stay local). The console and uncaught
+ * errors are collected in [console].
  *
  * The page gets no file or content access and no JavaScript interface. Uncaught errors and speech requests reach
  * the app through web message listeners limited to the site's origin.
  */
 // The generated app is JavaScript; it is confined to its origin and process.
 @SuppressLint("SetJavaScriptEnabled")
-class SiteBrowser(context: Context, projectId: ProjectId, siteDir: File) {
+class SiteBrowser(
+    context: Context,
+    projectId: ProjectId,
+    siteDir: File,
+    private val allowNetwork: Boolean = false
+) {
     private val domain = "${projectId.value.lowercase()}.$ASSET_DOMAIN"
     val origin = "https://$domain"
 
@@ -58,11 +64,15 @@ class SiteBrowser(context: Context, projectId: ProjectId, siteDir: File) {
     private val _crashed = MutableStateFlow(false)
     val crashed: StateFlow<Boolean> = _crashed.asStateFlow()
 
+    /** The page tried a request that is blocked only because network access for apps is off. */
+    private val _networkBlocked = MutableStateFlow(false)
+    val networkBlocked: StateFlow<Boolean> = _networkBlocked.asStateFlow()
+
     private val speech = SpeechBridge(context)
 
     private val assetLoader = WebViewAssetLoader.Builder()
         .setDomain(domain)
-        .addPathHandler("/", SiteFiles(siteDir))
+        .addPathHandler("/", SiteFiles(siteDir, headers(allowNetwork)))
         .build()
 
     init {
@@ -87,6 +97,7 @@ class SiteBrowser(context: Context, projectId: ProjectId, siteDir: File) {
 
     fun reload() {
         _console.value = emptyList()
+        _networkBlocked.value = false
         webView.reload()
     }
 
@@ -114,10 +125,12 @@ class SiteBrowser(context: Context, projectId: ProjectId, siteDir: File) {
 
     private fun relative(url: String) = url.replace("$origin/", "")
 
-    private fun intercept(url: Uri): WebResourceResponse = if (url.host == domain) {
-        assetLoader.shouldInterceptRequest(url) ?: emptyResponse(404, "Not Found")
-    } else {
-        emptyResponse(403, "Forbidden")
+    /** Null lets the WebView fetch the request itself; the CSP decides which kinds of request that is allowed for. */
+    private fun intercept(url: Uri): WebResourceResponse? = when {
+        url.host == domain ->
+            assetLoader.shouldInterceptRequest(url) ?: emptyResponse(404, "Not Found")
+        allowNetwork && url.scheme == "https" -> null
+        else -> emptyResponse(403, "Forbidden")
     }
 
     private fun interceptServiceWorkers() {
@@ -161,6 +174,24 @@ class SiteBrowser(context: Context, projectId: ProjectId, siteDir: File) {
         val report = data?.let {
             runCatching { json.decodeFromString(ErrorReport.serializer(), it) }.getOrNull()
         } ?: return
+        if (report.network) {
+            // With network access on, the policy still blocks plain http and the like; that's not the setting.
+            if (!allowNetwork) {
+                _networkBlocked.value = true
+                log(
+                    ConsoleMessage(
+                        ConsoleMessage.Level.ERROR,
+                        "Request to ${report.message.take(
+                            MAX_REPORT_CHARS
+                        )} failed: network access " +
+                            "for apps is turned off in Settings.",
+                        "",
+                        0
+                    )
+                )
+            }
+            return
+        }
         log(
             ConsoleMessage(
                 ConsoleMessage.Level.ERROR,
@@ -270,8 +301,9 @@ class SiteBrowser(context: Context, projectId: ProjectId, siteDir: File) {
         ) = callback.invoke(origin, false, false)
     }
 
-    /** Serves site files with types the module loader accepts, and the policy that keeps the page offline. */
-    private class SiteFiles(siteDir: File) : WebViewAssetLoader.PathHandler {
+    /** Serves site files with types the module loader accepts, and the content security policy. */
+    private class SiteFiles(siteDir: File, private val headers: Map<String, String>) :
+        WebViewAssetLoader.PathHandler {
         private val root = siteDir.canonicalFile
 
         override fun handle(path: String): WebResourceResponse? {
@@ -279,7 +311,7 @@ class SiteBrowser(context: Context, projectId: ProjectId, siteDir: File) {
             val file = File(root, name).canonicalFile
             if (!file.path.startsWith(root.path + File.separator) || !file.isFile) return null
             val type = MIME_TYPES[file.extension.lowercase()] ?: "application/octet-stream"
-            return WebResourceResponse(type, "utf-8", 200, "OK", HEADERS, file.inputStream())
+            return WebResourceResponse(type, "utf-8", 200, "OK", headers, file.inputStream())
         }
     }
 
@@ -288,7 +320,9 @@ class SiteBrowser(context: Context, projectId: ProjectId, siteDir: File) {
         val message: String,
         val source: String = "",
         val line: Int = 0,
-        val stack: String = ""
+        val stack: String = "",
+        /** A request the content security policy blocked; [message] is its URL. */
+        val network: Boolean = false
     )
 
     private companion object {
@@ -312,10 +346,20 @@ class SiteBrowser(context: Context, projectId: ProjectId, siteDir: File) {
             "md" to "text/markdown"
         )
 
-        // Network access stays off even for a page that tries fetch, WebSocket, or a form post to another host.
-        val HEADERS = mapOf(
+        // Offline by default, even for a page that tries fetch, WebSocket, or a form post to another host. With
+        // network access, the page may fetch data, open secure WebSockets, and show images and media from any https
+        // site. Scripts, styles, and fonts stay local, so no third-party code runs with the page's storage.
+        fun headers(allowNetwork: Boolean) = mapOf(
             "Content-Security-Policy" to
                 "default-src 'self' 'unsafe-inline' 'unsafe-eval' data: blob:; " +
+                (
+                    if (allowNetwork) {
+                        "connect-src 'self' https: wss:; img-src 'self' data: blob: https:; " +
+                            "media-src 'self' data: blob: https:; "
+                    } else {
+                        ""
+                    }
+                    ) +
                 "form-action 'self'; base-uri 'self'",
             "Cache-Control" to "no-store"
         )
@@ -325,7 +369,7 @@ class SiteBrowser(context: Context, projectId: ProjectId, siteDir: File) {
             "utf-8",
             status,
             reason,
-            HEADERS,
+            headers(false),
             ByteArrayInputStream(ByteArray(0))
         )
 
@@ -347,6 +391,14 @@ class SiteBrowser(context: Context, projectId: ProjectId, siteDir: File) {
                 if (!(event instanceof ErrorEvent)) return;
                 const stack = event.error && event.error.stack;
                 if (report(event.message, event.filename, event.lineno, stack)) event.preventDefault();
+              });
+              // A blocked fetch only rejects with "Failed to fetch", which looks like being offline.
+              document.addEventListener('securitypolicyviolation', (event) => {
+                if (event.effectiveDirective !== 'connect-src') return;
+                const channel = window.$REPORTER_OBJECT;
+                if (channel) {
+                  channel.postMessage(JSON.stringify({ message: event.blockedURI, network: true }));
+                }
               });
               window.addEventListener('unhandledrejection', (event) => {
                 const reason = event.reason;

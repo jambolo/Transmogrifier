@@ -45,12 +45,16 @@ data class ProviderHistory(val provider: ProviderId, val items: List<JsonElement
 
 /**
  * The next user turn: results for every tool call of the previous assistant turn (which must come first), then
- * optional text.
+ * optional text. [resume] adds nothing: it continues a turn the provider paused ([StopReason.PAUSED]).
  */
 @Serializable
-data class TurnInput(val toolResults: List<ToolResult> = emptyList(), val text: String? = null) {
+data class TurnInput(
+    val toolResults: List<ToolResult> = emptyList(),
+    val text: String? = null,
+    val resume: Boolean = false
+) {
     init {
-        require(toolResults.isNotEmpty() || text != null) { "Empty turn input" }
+        require(toolResults.isNotEmpty() || text != null || resume) { "Empty turn input" }
     }
 }
 
@@ -67,7 +71,8 @@ data class TurnRequest(
     val input: TurnInput
 )
 
-enum class StopReason { END_TURN, TOOL_USE, MAX_TOKENS, REFUSAL, OTHER }
+/** [PAUSED]: a long server-side tool loop (web search) stopped early; resend the history to continue it. */
+enum class StopReason { END_TURN, TOOL_USE, MAX_TOKENS, REFUSAL, PAUSED, OTHER }
 
 data class Usage(
     val inputTokens: Long,

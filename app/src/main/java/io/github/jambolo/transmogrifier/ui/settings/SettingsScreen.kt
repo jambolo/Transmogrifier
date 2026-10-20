@@ -3,17 +3,20 @@ package io.github.jambolo.transmogrifier.ui.settings
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
@@ -35,9 +38,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -76,7 +81,8 @@ fun SettingsRoute(container: AppContainer, onBack: () -> Unit) {
         onEffort = viewModel::setEffort,
         onMaxToolIterations = viewModel::setMaxToolIterations,
         onMaxOutputTokens = viewModel::setMaxOutputTokens,
-        onAppInstructions = viewModel::setAppInstructions
+        onAppInstructions = viewModel::setAppInstructions,
+        onAllowAppNetwork = viewModel::setAllowAppNetwork
     )
 }
 
@@ -93,7 +99,8 @@ fun SettingsScreen(
     onEffort: (Effort) -> Unit,
     onMaxToolIterations: (Int) -> Unit,
     onMaxOutputTokens: (Int) -> Unit,
-    onAppInstructions: (String) -> Unit
+    onAppInstructions: (String) -> Unit,
+    onAllowAppNetwork: (Boolean) -> Unit
 ) {
     val settings = state.settings
     var advanced by rememberSaveable { mutableStateOf(false) }
@@ -235,6 +242,30 @@ fun SettingsScreen(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 InstructionsField(settings.appInstructions, onAppInstructions)
+
+                SectionTitle(stringResource(R.string.app_network))
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .toggleable(
+                            value = settings.allowAppNetwork,
+                            role = Role.Checkbox,
+                            onValueChange = onAllowAppNetwork
+                        ),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Checkbox(checked = settings.allowAppNetwork, onCheckedChange = null)
+                    Text(
+                        stringResource(R.string.app_network_label),
+                        Modifier.padding(start = 12.dp),
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+                Text(
+                    stringResource(R.string.app_network_help),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         }
     }
@@ -491,7 +522,8 @@ private fun SettingsScreenPreview() {
             onEffort = {},
             onMaxToolIterations = {},
             onMaxOutputTokens = {},
-            onAppInstructions = {}
+            onAppInstructions = {},
+            onAllowAppNetwork = {}
         )
     }
 }

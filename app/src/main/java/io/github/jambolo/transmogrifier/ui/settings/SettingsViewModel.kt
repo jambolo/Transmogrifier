@@ -88,6 +88,8 @@ class SettingsViewModel(
 
     fun setAppInstructions(value: String) = update { it.copy(appInstructions = value) }
 
+    fun setAllowAppNetwork(value: Boolean) = update { it.copy(allowAppNetwork = value) }
+
     private fun update(transform: (Settings) -> Settings) {
         viewModelScope.launch { repository.update(transform) }
     }

@@ -76,6 +76,7 @@
     <string name="console">Error details</string>
     <string name="send_errors">Try to fix it</string>
     <string name="page_says">%1$s says</string>
+    <string name="app_network_blocked">This app tried to use the network, but network access for apps is turned off. Turn it on in Settings, under Advanced, then reload.</string>
     <string name="page_crashed">This app stopped unexpectedly. Reload to try opening it again.</string>
     <string name="open_link_title">Open this link in your browser?</string>
     <string name="open">Open</string>
@@ -137,6 +138,9 @@
     <string name="api_key_help">A connection key from %1$s. Paste it here to let Transmogrifier make and change apps.</string>
     <string name="advanced_settings">Advanced settings</string>
     <string name="hide_advanced_settings">Hide advanced settings</string>
+    <string name="app_network">Network access for apps</string>
+    <string name="app_network_label">Let apps use the network</string>
+    <string name="app_network_help">Apps can then load data, images, and media from other secure (https) websites. Scripts, styles, and fonts from other sites stay blocked. Off by default; applies the next time you run an app. Your AI service still avoids network calls unless you ask for them.</string>
     <string name="advanced_help">Choose how your AI service works. The defaults are ready to use.</string>
     <string name="effort_help">More thinking can take longer and cost more.</string>
     <string name="limits_help">These limits control how much work each request can do. They are not spending limits.</string>
