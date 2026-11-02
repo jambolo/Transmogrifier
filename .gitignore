@@ -4,6 +4,9 @@
 .externalNativeBuild
 .cxx
 local.properties
+keystore.properties
+*.jks
+*.keystore
 
 # Gradle / Kotlin
 !gradle/wrapper/gradle-wrapper.jar
