@@ -45,6 +45,21 @@ adb install -r app/build/outputs/apk/release/app-release.apk
 
 In PowerShell, quote each `-P` argument.
 
+### Signing and publishing
+
+`app/build.gradle.kts` signs the release build when `keystore.properties` exists in the project root; without it, `assembleRelease` produces an unsigned APK. The file holds `storeFile`, `storePassword`, `keyAlias`, and `keyPassword`. It and `*.jks`/`*.keystore` are git-ignored, so never commit them. Back up the keystore: updates must be signed with the same key.
+
+Pushing a `v*` tag runs `.github/workflows/release.yml`, which checks that the tag matches `versionName`, builds and verifies the signed APK, and attaches it to a new GitHub release. It needs these repository secrets:
+
+| Secret | Value |
+| --- | --- |
+| `SIGNING_KEYSTORE_BASE64` | The keystore, base64-encoded (PowerShell: `[Convert]::ToBase64String([IO.File]::ReadAllBytes("path\to\release.jks"))`) |
+| `SIGNING_STORE_PASSWORD` | Keystore password |
+| `SIGNING_KEY_ALIAS` | Key alias |
+| `SIGNING_KEY_PASSWORD` | Key password |
+
+To release: bump `versionCode` and `versionName`, commit on the `release/*` branch, create an annotated tag `vX.Y.Z`, merge to `master` with `--no-ff`, and run `git push origin master --follow-tags`.
+
 ## Tests
 
 - **Unit tests** (`app/src/test`) run with `./gradlew build` or `./gradlew testDebugUnitTest`. Provider tests replay SSE fixtures from `app/src/test/resources/fixtures`, so they don't need API keys.
@@ -70,6 +85,8 @@ adb shell am instrument -w io.github.jambolo.transmogrifier.test/androidx.test.r
 ## CI
 
 GitHub Actions (`.github/workflows/ci.yml`) runs the build and tests on every push to `master`, `develop`, and `release/**` and on every pull request. ktlint runs on pull requests.
+
+A separate release workflow publishes signed APKs for `v*` tags; see [Signing and publishing](#signing-and-publishing).
 
 CI also generates debug unit-test coverage and uploads the XML report to Codecov. Configure the repository in Codecov and save its upload token as the GitHub Actions secret `CODECOV_TOKEN`. Upload failures fail the build job. Instrumented-test coverage is not included.
 
