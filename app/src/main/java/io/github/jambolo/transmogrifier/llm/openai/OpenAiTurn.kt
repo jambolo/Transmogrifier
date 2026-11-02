@@ -22,6 +22,7 @@ import io.github.jambolo.transmogrifier.llm.Usage
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -43,7 +44,9 @@ internal object OpenAiRequests {
      */
     fun params(request: TurnRequest): ResponseCreateParams {
         // Sent as a raw tree: a typed round-trip through ResponseInputItem adds fields under R8.
-        val items = JsonArray(request.history.items + inputItems(request.input))
+        val items = JsonArray(
+            (request.history.items + inputItems(request.input)).map(::withoutNulls)
+        )
         val builder = ResponseCreateParams.builder()
             .model(request.model)
             .instructions(request.systemPrompt)
@@ -63,6 +66,18 @@ internal object OpenAiRequests {
             )
         }
         return builder.build()
+    }
+
+    /**
+     * Output items carry null fields that OpenAI rejects as input (`status` on reasoning items). Stored history keeps
+     * them; only the copy sent is cleaned, and a null field says nothing, so the replay loses nothing.
+     */
+    private fun withoutNulls(element: JsonElement): JsonElement = when (element) {
+        is JsonObject -> JsonObject(
+            element.filterValues { it !is JsonNull }.mapValues { withoutNulls(it.value) }
+        )
+        is JsonArray -> JsonArray(element.map(::withoutNulls))
+        else -> element
     }
 
     private fun tool(definition: ToolDefinition): FunctionTool {

@@ -1,6 +1,6 @@
 # Campaign and launch copy
 
-Working product name retained: Transmogrifier. These are prepared drafts, not published materials. Distribution URL, release date, product pricing, and support contact are unknown and must not be fabricated.
+Copy for announcing Transmogrifier. Use only verified links and facts.
 
 ## Landing-page copy
 
@@ -14,11 +14,11 @@ Working product name retained: Transmogrifier. These are prepared drafts, not pu
 
 **Lifecycle line:** Keep it while it helps. Delete it when you're done.
 
-**Current-build action:** See setup requirements
+**Action:** Get Transmogrifier for Android
 
-**Disclosure beside the action:** Early Android version. Requires your own Claude API key. Creating and changing apps is billed by Claude.
+**Disclosure beside the action:** Requires your own API key from Anthropic or OpenAI. Creating and changing apps is billed by that company.
 
-For a future download action, use “Get Transmogrifier for Android” only when a verified destination exists. The brand preview links to the actual local setup instructions instead of pretending a release is available.
+Link the action to the project's GitHub releases page.
 
 ### Three supporting panels
 
@@ -42,23 +42,23 @@ Label illustrated examples as “Example app” or “Design concept” when the
 
 **Short:** Make little apps for everyday moments. Describe what you need in plain language.
 
-**Medium:** Transmogrifier helps you make small personal apps on Android. Describe what you need, open the result, and ask for changes in everyday words. Make a tool for tonight, this weekend, or as long as it helps. This early version requires your own Claude API key; generation usage is billed by Claude.
+**Medium:** Transmogrifier helps you make small personal apps on Android. Describe what you need, open the result, and ask for changes in everyday words. Make a tool for tonight, this weekend, or as long as it helps. Requires your own API key from Anthropic or OpenAI; generation usage is billed by that company.
 
-**Store title draft:** Transmogrifier: Little Apps
+**Store title:** Transmogrifier: Little Apps
 
-The short description and title are also provided as plain text under `copy/`. Store rules and publication metadata must be checked at submission; these files are copy drafts, not a claim of store readiness.
+The short description and title are also provided as plain text under `copy/`. Check store rules and publication metadata at submission.
 
-## Store description draft
+## Store description
 
 Make a little app for the thing you need right now.
 
 A scorekeeper for game night. A packing checklist for a weekend away. A picker for those days when choosing lunch becomes a group project.
 
-Describe your idea in everyday words. Transmogrifier uses Claude to create a small app you can open right inside Transmogrifier. Want bigger buttons or a different layout? Ask for a change.
+Describe your idea in everyday words. Transmogrifier uses Claude or ChatGPT to create a small app you can open right inside Transmogrifier. Want bigger buttons or a different layout? Ask for a change.
 
 Your apps stay until you delete them. Keep the useful ones. Move on from the ones that have done their job.
 
-This is an early Android version. You need Android 8.0 or later and your own Claude API key. Claude bills your account for creating and changing apps; a Claude subscription does not include this API usage. Making or changing an app requires an internet connection. Your descriptions and relevant app context are sent to Claude.
+You need Android 8.0 or later and your own API key from Anthropic (Claude) or OpenAI (ChatGPT). That company bills your account for creating and changing apps; a chat subscription does not include this API usage. Making or changing an app requires an internet connection. Your descriptions and relevant app context are sent to the service you choose.
 
 Generated apps run inside Transmogrifier. This version does not publish them to an app store or provide shared, live apps across devices. Results can need changes before they work as intended.
 
@@ -68,9 +68,9 @@ Start with something small.
 
 | Theme | Caption | Asset |
 | --- | --- | --- |
-| Introduction | Some ideas only need an evening. Make a little app for yours. Transmogrifier: little apps for right now. Early Android version; your own Claude API key and paid API usage required. | `assets/campaign/social-intro-1200x630.png` |
-| Game night | Tonight's game deserves a scorekeeper. Describe one, try it, and change what you need. Early Android version; Claude API key and usage charges required. | `assets/campaign/social-game-night-1080.png` |
-| Lifecycle | Make it. Use it. Move on. Your apps stay until you delete them. Early Android version; Claude API key and usage charges required. | `assets/campaign/social-lifecycle-1080.png` |
+| Introduction | Some ideas only need an evening. Make a little app for yours. Transmogrifier: little apps for right now. For Android; your own Claude or OpenAI API key and paid API usage required. | `assets/campaign/social-intro-1200x630.png` |
+| Game night | Tonight's game deserves a scorekeeper. Describe one, try it, and change what you need. For Android; Claude or OpenAI API key and usage charges required. | `assets/campaign/social-game-night-1080.png` |
+| Lifecycle | Make it. Use it. Move on. Your apps stay until you delete them. For Android; Claude or OpenAI API key and usage charges required. | `assets/campaign/social-lifecycle-1080.png` |
 
 No invented reviews, install counts, awards, customer quotes, prices, launch dates, or partner endorsements. Avoid official store badges until there is an actual listing and the badge requirements are met.
 
@@ -87,16 +87,16 @@ Use a real recorded successful run. If generation is shortened for editing, labe
 
 ## FAQ
 
-**Do I need to code?** No. Describe the app and the changes you want in ordinary language. The early version does require setup with a Claude API key.
+**Do I need to code?** No. Describe the app and the changes you want in ordinary language. Setup does require an API key from Anthropic or OpenAI.
 
 **Does an app disappear after I use it?** No. It stays until you delete it.
 
 **Can I use it for something more than once?** Yes. Keep an app while it is useful, and ask for changes when you need them.
 
-**Is it free?** Creating and changing apps uses your Claude API account, which Claude bills separately. Product pricing has not been specified in this branding package.
+**Is it free?** Creating and changing apps uses your Anthropic or OpenAI API account, which that company bills separately.
 
 **Where do the apps run?** Inside Transmogrifier on your Android device. Public publishing and live sharing are not features of this version.
 
-**Is everything kept on my phone?** Project files are stored on the device, but descriptions and relevant app context go to Claude when you make or change an app. Sending errors for repair also sends information to the provider.
+**Is everything kept on my phone?** Project files are stored on the device, but descriptions and relevant app context go to Claude or ChatGPT, whichever the app uses, when you make or change an app. Sending errors for repair also sends information to the provider.
 
-**Can it make any app?** This version is best introduced with small, self-contained tools. Generated apps cannot fetch information from other sites inside the built-in browser. Do not advertise connected services, live weather, shared databases, or native phone features as available capabilities.
+**Can it make any app?** This version is best introduced with small, self-contained tools. By default, generated apps can't use the network. Turning on “Let apps use the network” in Advanced settings lets them load data, images, and media from secure sites. Do not advertise connected services, live weather, shared databases, or native phone features as available capabilities.

@@ -1,7 +1,5 @@
 # Brand strategy
 
-Version 1 · October 19, 2026 · Working product name: Transmogrifier.
-
 ## The idea
 
 **An app for the moment.**
@@ -40,7 +38,7 @@ These are example requests, not bundled templates or verified output guarantees.
 
 | Promise | Experience that supports it | Boundary |
 | --- | --- | --- |
-| Say what you need | Create with a plain-language description | Current setup still requires an AI provider key |
+| Say what you need | Create with a plain-language description | Setup requires an AI provider key |
 | Make it fit | Ask for follow-up changes | Generated results can need another attempt |
 | Use it here | Open the result inside the Android app | No standalone store publication or public sharing is promised |
 | Move on when you like | Rename, keep, or manually delete an app | Apps do not expire or disappear automatically |
@@ -67,20 +65,10 @@ Short-lived usefulness is a valid outcome. Keeping an app is equally valid. Do n
 4. Make the result easy to open and easy to revise.
 5. Explain costs before paid requests and deletion before it happens.
 
-These principles guide future product work. This branding package does not implement that work.
+These principles guide product decisions.
 
 ## Product reality
 
-The inspected build is an early Android app with Claude API generation, local project files, an in-app browser, follow-up editing, and manual deletion. OpenAI support is disabled pending verification. Users supply their own provider key; usage is billed by that provider. The app's own pricing and distribution plans are not established here.
+Transmogrifier is an Android app with generation through Claude or ChatGPT, local project files, an in-app browser, follow-up editing, and manual deletion. Users supply their own provider key; usage is billed by that provider.
 
-The consumer ambition and current setup have a real gap. Marketing for the current build must disclose the key and billing requirement before someone commits to trying it. Do not use “anyone can start immediately” as a substitute for improving onboarding.
-
-## How to evaluate the brand
-
-In a short moderated test, show the headline, an example, and the setup disclosure to people without development or AI experience. Ask them to explain what the product makes, where the result runs, whether it disappears, and what is required to start. Record their words rather than coaching them.
-
-Treat comprehension, first useful result, and successful revision as the useful signals. Automatic tracking, retention targets, and analytics collection are not authorized or implemented by this document.
-
-## Basis
-
-Product facts come from [the project README](../../README.md), [the development plan](../plan.md), and the current source listed in [the handoff](07-handoff.md). Audience, tone, disposable-use emphasis, and exclusion of comic-derived branding come from the owner's brief. The owner selected “bright and witty, for adults.” Other creative choices are recommendations in this package.
+The consumer ambition and the setup have a real gap. Marketing must disclose the key and billing requirement before someone commits to trying it. Do not use “anyone can start immediately” as a substitute for improving onboarding.

@@ -19,9 +19,7 @@ import kotlinx.serialization.json.JsonObject
 @Serializable
 enum class ProviderId(val defaultModel: String, val enabled: Boolean = true) {
     ANTHROPIC("claude-opus-5-5"),
-
-    // Disabled until generation has been verified with a real key.
-    OPENAI("gpt-6.1-sol", enabled = false);
+    OPENAI("gpt-6.1-sol");
 
     companion object {
         val enabledEntries: List<ProviderId> = entries.filter { it.enabled }

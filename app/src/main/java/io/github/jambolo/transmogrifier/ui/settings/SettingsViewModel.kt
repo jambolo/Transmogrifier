@@ -50,6 +50,10 @@ class SettingsViewModel(
     fun saveKey(provider: ProviderId, key: String) {
         viewModelScope.launch {
             repository.setApiKey(provider, key.trim())
+            // New apps must not default to a service the user can't use.
+            repository.update {
+                if (it.newAppProvider in it.apiKeyHints) it else it.copy(defaultProvider = provider)
+            }
             keyTests.update { it - provider }
         }
     }

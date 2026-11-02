@@ -1,9 +1,15 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.ktlint)
 }
+
+val keystoreProps = rootProject.file("keystore.properties")
+    .takeIf { it.exists() }
+    ?.let { f -> Properties().apply { f.inputStream().use(::load) } }
 
 android {
     namespace = "io.github.jambolo.transmogrifier"
@@ -15,10 +21,21 @@ android {
         applicationId = "io.github.jambolo.transmogrifier"
         minSdk = 26
         targetSdk = 37
-        versionCode = 5
-        versionName = "0.5.0"
+        versionCode = 6
+        versionName = "1.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    signingConfigs {
+        if (keystoreProps != null) {
+            create("release") {
+                storeFile = file(keystoreProps.getProperty("storeFile"))
+                storePassword = keystoreProps.getProperty("storePassword")
+                keyAlias = keystoreProps.getProperty("keyAlias")
+                keyPassword = keystoreProps.getProperty("keyPassword")
+            }
+        }
     }
 
     buildTypes {
@@ -26,6 +43,7 @@ android {
             enableUnitTestCoverage = true
         }
         release {
+            signingConfigs.findByName("release")?.let { signingConfig = it }
             optimization {
                 enable = true
             }

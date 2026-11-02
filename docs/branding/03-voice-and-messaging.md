@@ -21,7 +21,7 @@ Use one main line per surface. A paragraph containing every slogan sounds like a
 | Direct | Name the action and the result | “Describe the app you need.” |
 | Warm | Invite without praising routine actions | “Start with something small.” |
 | Witty | Find humor in everyday situations | “An app for tonight's very serious board game.” |
-| Honest | Explain a limit without dramatizing it | “This version needs a Claude API key.” |
+| Honest | Explain a limit without dramatizing it | “This version needs an API key from Anthropic or OpenAI.” |
 | Unfussy | Prefer ordinary verbs | “Make,” “open,” “change,” “keep,” “delete” |
 
 Sentence case. American spelling. Short paragraphs. Contractions are welcome. Use exclamation points sparingly. Avoid baby talk, forced excitement, sarcasm, “ta-da” after every action, and claims of magic.
@@ -64,7 +64,7 @@ Do not rename technical concepts so thoroughly that support instructions become 
 | --- | --- |
 | “Unleash the power of agentic AI.” | “Make a scorekeeper for tonight.” |
 | “Build anything instantly.” | “Describe a small app you'd like to try.” |
-| “No technical setup. Ever.” | “No coding needed. This early version requires a Claude API key.” |
+| “No technical setup. Ever.” | “No coding needed. Requires an API key from Anthropic or OpenAI.” |
 | “Your app is perfect!” | “Ready to try.” |
 | “Oopsie! Your masterpiece vanished.” | “This app couldn't be opened.” |
 | “Your data never leaves your phone.” | “Your descriptions and relevant app context are sent to your AI provider when you create or change an app.” |

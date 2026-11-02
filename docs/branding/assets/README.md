@@ -1,6 +1,6 @@
 # Asset inventory and provenance
 
-All paths below are relative to this directory. Assets are prepared for review and implementation; no live application or account has been updated.
+All paths below are relative to this directory.
 
 ## Logos
 
@@ -25,17 +25,17 @@ Clear space is external to the SVG viewport. Refer to [visual guidelines](../04-
 
 Twelve editable 24 × 24 functional SVGs: `plus`, `check`, `list`, `dice`, `shuffle`, `arrow-right`, `edit`, `delete`, `close`, `retry`, `play`, and `suitcase`. They have explicit ink strokes; recolor deliberately in the consuming component. Do not assume an externally loaded SVG inherits CSS `currentColor`.
 
-`android/` contains adaptive foreground and monochrome VectorDrawables, a background color resource, and v26/v33 adaptive-icon definitions. Resource names are prefixed `brand_`. They are not copied into the app or launcher-tested.
+`android/` contains adaptive foreground and monochrome VectorDrawables, a background color resource, and v26/v33 adaptive-icon definitions. Resource names are prefixed `brand_`.
 
 ## Illustration
 
 | File | Origin | Use |
 | --- | --- | --- |
 | `illustrations/app-tiles.png` | Generated using the built-in imagegen tool, October 19, 2026 | Text-free campaign hero; 1536 × 1024 |
-| `illustrations/tile-pattern.svg` | Original vector construction in this task | Decorative background; 600 × 600 |
-| `illustrations/empty-state.svg` | Original vector construction in this task | Proposed empty-state illustration; 320 × 240 |
+| `illustrations/tile-pattern.svg` | Original vector construction | Decorative background; 600 × 600 |
+| `illustrations/empty-state.svg` | Original vector construction | Empty-state illustration; 320 × 240 |
 
-The final illustration prompt is preserved in [image-generation-prompt.txt](image-generation-prompt.txt). No reference image, existing character, stock photograph, external logo, or artist imitation was supplied. The generated image was inspected and copied into this package. It is conceptual artwork, not a product screenshot. The original generated PNG has not been retouched.
+No reference image, existing character, stock photograph, external logo, or artist imitation was supplied. It is conceptual artwork, not a product screenshot. The original generated PNG has not been retouched.
 
 ## Campaign exports
 
@@ -43,12 +43,12 @@ Each has an editable vector composition with outlined type and a matching full-s
 
 | Base filename under `campaign/` | Dimensions | Intended placement |
 | --- | --- | --- |
-| `social-intro-1200x630` | 1200 × 630 | Landscape announcement / link-card draft |
-| `social-game-night-1080` | 1080 × 1080 | Square use-case draft; explicitly labeled design concept |
-| `social-lifecycle-1080` | 1080 × 1080 | Square brand-message draft |
-| `feature-graphic-1024x500` | 1024 × 500 | Android store feature-graphic draft |
+| `social-intro-1200x630` | 1200 × 630 | Landscape announcement / link card |
+| `social-game-night-1080` | 1080 × 1080 | Square use case; explicitly labeled design concept |
+| `social-lifecycle-1080` | 1080 × 1080 | Square brand message |
+| `feature-graphic-1024x500` | 1024 × 500 | Android store feature graphic |
 
-These dimensions are export targets, not a certification against future platform submission requirements. No official store badges, distribution links, testimonials, or release claims are embedded. Current setup and API-billing disclosures are present in each composition.
+These dimensions are export targets, not a certification against platform submission requirements. No official store badges, distribution links, or testimonials are embedded. Setup and API-billing disclosures are present in each composition.
 
 ## Fonts and licenses
 
@@ -59,7 +59,7 @@ These dimensions are export targets, not a certification against future platform
 
 Downloaded October 19, 2026. Original copyright and SIL Open Font License text is retained verbatim. Keep the corresponding license with redistributed font files. Five static Manrope instances (400, 500, 600, 700, 800) were made with fontTools 4.67.0 for reliable SVG outlining. The browser preview uses the variable originals.
 
-Vector geometry, layouts, copy, and build tools were authored for this repository. The repository's existing license remains in place; this package does not invent a different asset license or make a legal-exclusivity claim. The generated illustration's provenance is disclosed above; the font licenses govern the bundled font software.
+Vector geometry, layouts, copy, and build tools were authored for this repository. The repository's license applies; no separate asset license or legal-exclusivity claim is made. The generated illustration's provenance is disclosed above; the font licenses govern the bundled font software.
 
 ## Source and reproducibility
 

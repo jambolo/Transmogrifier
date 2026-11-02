@@ -9,21 +9,22 @@
 
 Describe a scorekeeper for tonight, a checklist for the weekend, or another little app you would like to use. Transmogrifier makes it on your Android device. Open it in the built-in browser and ask for changes as you go. Your apps stay until you delete them.
 
-Apps are written by **Claude**, through the Anthropic API. Support for OpenAI is built but disabled until it has been tested.
+Apps are written by **Claude** (Anthropic API) or **ChatGPT** (OpenAI API). Choose the service for new apps in Settings; each needs an API key from that company, and a chat subscription doesn't include API usage.
 
-You use your own API key, and requests are billed to that account. There is no sign-in with a Claude subscription.
+You use your own API key, and requests are billed to that account. There is no sign-in with a Claude or ChatGPT subscription.
 
 ## Requirements
 
 - An Android phone or tablet running Android 8.0 or later.
-- An API key from the [Claude Console](https://console.anthropic.com/).
+- An API key from the [Claude Console](https://console.anthropic.com/) or the [OpenAI Platform](https://platform.openai.com/api-keys). You only need one.
 
 ## Using the app
 
 ### Set up
 
-1. On first launch, the app opens **Settings**. Paste your API key, tap **Save**, then **Check connection**. A passing check shows how many models the key can use.
-2. The defaults are ready to use. Open **Advanced settings** to change the **Model for new apps** or adjust:
+1. On first launch, the app opens **Settings**. Paste your API key into the **Claude** or **ChatGPT** card, tap **Save**, then **Check connection**. A passing check shows how many models the key can use.
+2. If you saved keys for both, choose one under **AI service for new apps**. Each app keeps the service it was made with.
+3. The defaults are ready to use. Open **Advanced settings** to change the **Model for new apps** or adjust:
    - **Thinking effort**: how much the model reasons before answering. More thinking can take longer and cost more.
    - **Steps per request**: how many steps the model may take for one request before it pauses.
    - **Reply limit (tokens)**: the length limit for each model reply. These limits are not spending limits.
@@ -50,7 +51,7 @@ After a run with errors, the chat's **Try to fix it** button also sends them to 
 
 ### Manage apps
 
-From the menu next to each app on the projects screen, you can rename or delete it. Each app keeps the model it was created with.
+From the menu next to each app on the projects screen, you can rename or delete it. Each app keeps the service and model it was created with.
 
 ## Privacy and safety
 
@@ -59,9 +60,9 @@ From the menu next to each app on the projects screen, you can rename or delete 
 - Generated apps can't use the network by default: requests to other sites are blocked. The "Let apps use the network" checkbox in Advanced settings lets them fetch data from, and show images and media from, other https sites. Plain http, remote scripts, styles, and fonts, and form posts stay blocked. Links to other sites open in your regular browser, after you confirm.
 - Each generated app has its own storage, so apps can't read each other's saved data.
 
-## Status
+## Building from source
 
-Early development. See [docs/plan.md](docs/plan.md) for the development plan and [DEVELOPMENT.md](DEVELOPMENT.md) for building from source.
+See [DEVELOPMENT.md](DEVELOPMENT.md).
 
 ## License
 

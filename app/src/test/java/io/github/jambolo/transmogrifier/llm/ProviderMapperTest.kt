@@ -310,5 +310,24 @@ class ProviderMapperTest {
         )
     }
 
+    @Test
+    fun openAiReplayDropsNullFields() {
+        // The shape gpt-6.1-sol returned; OpenAI rejected the null status with a 400 on replay.
+        val reasoning = Json.parseToJsonElement(
+            """{"id":"rs_1","summary":[],"type":"reasoning","content":null,
+               "encrypted_content":"enc","status":null}"""
+        ).jsonObject
+        val request = request(ProviderId.OPENAI, listOf(reasoning))
+        val body = com.openai.core.jsonMapper().writeValueAsString(
+            OpenAiRequests.params(request)._body()
+        )
+        assertEquals(
+            Json.parseToJsonElement(
+                """{"id":"rs_1","summary":[],"type":"reasoning","encrypted_content":"enc"}"""
+            ),
+            Json.parseToJsonElement(body).jsonObject.getValue("input").jsonArray[0]
+        )
+    }
+
     private fun normalize(json: String) = Json.parseToJsonElement(json).toString()
 }

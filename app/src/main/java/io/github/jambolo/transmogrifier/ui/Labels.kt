@@ -14,6 +14,15 @@ fun providerLabel(provider: ProviderId): String = stringResource(
     }
 )
 
+/** The company that issues the provider's API keys and bills for them. */
+@Composable
+fun providerKeySource(provider: ProviderId): String = stringResource(
+    when (provider) {
+        ProviderId.ANTHROPIC -> R.string.key_source_anthropic
+        ProviderId.OPENAI -> R.string.key_source_openai
+    }
+)
+
 @Composable
 fun effortLabel(effort: Effort): String = stringResource(
     when (effort) {

@@ -59,6 +59,7 @@ import io.github.jambolo.transmogrifier.llm.NetworkFailure
 import io.github.jambolo.transmogrifier.llm.ProviderId
 import io.github.jambolo.transmogrifier.settings.Settings
 import io.github.jambolo.transmogrifier.ui.effortLabel
+import io.github.jambolo.transmogrifier.ui.providerKeySource
 import io.github.jambolo.transmogrifier.ui.providerLabel
 import io.github.jambolo.transmogrifier.ui.theme.Citrus
 import io.github.jambolo.transmogrifier.ui.theme.Ink
@@ -160,6 +161,26 @@ fun SettingsScreen(
                 )
             }
 
+            val providers = ProviderId.enabledEntries
+            val provider = settings.newAppProvider
+            if (providers.size > 1) {
+                SectionTitle(stringResource(R.string.default_provider))
+                SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
+                    providers.forEachIndexed { i, choice ->
+                        SegmentedButton(
+                            selected = provider == choice,
+                            onClick = { onDefaultProvider(choice) },
+                            shape = SegmentedButtonDefaults.itemShape(i, providers.size)
+                        ) { Text(providerLabel(choice)) }
+                    }
+                }
+                Text(
+                    stringResource(R.string.default_provider_help),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
             OutlinedButton(
                 onClick = { advanced = !advanced },
                 modifier = Modifier.fillMaxWidth()
@@ -179,20 +200,6 @@ fun SettingsScreen(
                     stringResource(R.string.advanced_help),
                     style = MaterialTheme.typography.bodyMedium
                 )
-                val providers = ProviderId.enabledEntries
-                val provider = settings.newAppProvider
-                if (providers.size > 1) {
-                    SectionTitle(stringResource(R.string.default_provider))
-                    SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {
-                        providers.forEachIndexed { i, choice ->
-                            SegmentedButton(
-                                selected = provider == choice,
-                                onClick = { onDefaultProvider(choice) },
-                                shape = SegmentedButtonDefaults.itemShape(i, providers.size)
-                            ) { Text(providerLabel(choice)) }
-                        }
-                    }
-                }
                 ModelField(
                     provider,
                     settings.defaultModel(provider),
@@ -315,7 +322,7 @@ private fun ApiKeyCard(
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Text(providerLabel(provider), style = MaterialTheme.typography.titleSmall)
             Text(
-                stringResource(R.string.api_key_help, providerLabel(provider)),
+                stringResource(R.string.api_key_help, providerKeySource(provider)),
                 style = MaterialTheme.typography.bodyMedium
             )
             Text(
@@ -409,7 +416,8 @@ private fun keyErrorMessage(provider: ProviderId, error: LlmException): String {
     return when (error) {
         is LlmException.MissingKey -> stringResource(R.string.key_error_missing)
         is LlmException.InvalidKey -> stringResource(R.string.key_error_invalid, label)
-        is LlmException.PermissionDenied -> stringResource(R.string.key_error_permission, label)
+        is LlmException.PermissionDenied ->
+            stringResource(R.string.key_error_permission, label, providerKeySource(provider))
         is LlmException.RateLimited -> stringResource(R.string.key_error_rate_limited, label)
         is LlmException.Server -> stringResource(
             if (error.overloaded) R.string.key_error_overloaded else R.string.key_error_server,
