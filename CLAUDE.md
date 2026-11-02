@@ -2,12 +2,12 @@
 
 ## Project
 
-`docs/plan.md` is the authoritative development plan (phases, package layout, interfaces, tool definitions, storage, security model). Read it before structural work and record spike/phase results there.
+`DEVELOPMENT.md` documents the build, tests, architecture, and design rules. Read it before structural work and keep it current.
 
 ## Build configuration
 
 - Release builds use R8 (`optimization { enable = true }`). Both SDKs must keep working under minification; verify with a release build on a device/emulator when changing SDK usage or keep rules.
-- Keep rules go in `app/src/main/keepRules/*.keep`. Don't set `optimization.packageScope`: a partial scope made R8 break the Kotlin stdlib at runtime (see the spike result in `docs/plan.md`).
+- Keep rules go in `app/src/main/keepRules/*.keep`. Don't set `optimization.packageScope`: a partial scope made R8 break the Kotlin stdlib at runtime.
 - Configuration cache is enabled (`gradle.properties`); build logic must stay configuration-cache compatible.
 
 ## Architecture

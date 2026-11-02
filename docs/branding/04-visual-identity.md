@@ -110,4 +110,4 @@ Respect reduced-motion settings: use an immediate state change or a simple opaci
 
 ## Android icon
 
-The 512 px square icon is an export master with a full-bleed citrus background; launcher masks supply the outer shape. Adaptive XML layers under [assets/android](assets/android/) keep the symbol in a conservative central safe area. Android 13 and later also have a monochrome layer. These are handoff assets; they have not been integrated into the application or tested on launchers.
+The 512 px square icon is an export master with a full-bleed citrus background; launcher masks supply the outer shape. Adaptive XML layers under [assets/android](assets/android/) keep the symbol in a conservative central safe area. Android 13 and later also have a monochrome layer. The app's launcher icon uses the same symbol and citrus background.

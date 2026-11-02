@@ -15,8 +15,8 @@ android {
         applicationId = "io.github.jambolo.transmogrifier"
         minSdk = 26
         targetSdk = 37
-        versionCode = 5
-        versionName = "0.5.0"
+        versionCode = 6
+        versionName = "1.0.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

@@ -1,6 +1,6 @@
 # Development
 
-[docs/plan.md](docs/plan.md) is the authoritative development plan: phases, package layout, interfaces, tool definitions, storage, and security model. Record spike and phase results there.
+How to build, test, and change Transmogrifier.
 
 ## Requirements
 
@@ -94,6 +94,17 @@ Key invariants:
 - The generated app runs in the `:runner` process, which never builds `AppContainer`. It is served over `https://` on a per-project origin, with no file or content access and no `addJavascriptInterface`. Requests outside that origin are blocked, both by request interception and by a Content Security Policy header. With "Let apps use the network" on (Advanced settings, passed to the runner as an intent extra), https `fetch`/WebSocket/image/media requests pass; remote scripts, styles, fonts, and plain http stay blocked. Uncaught errors and speech requests reach the app through web message listeners limited to the site's origin.
 - The system prompt and tool definitions must stay byte-identical between requests so prompt caching hits.
 
+### Design notes
+
+- **Generated apps:** a static site in `site/` with the entry point `index.html`, relative paths, and no build step. `Workspace` allows `.html`, `.css`, `.js`, `.mjs`, `.json`, `.svg`, `.txt`, and `.md`, with limits of depth 6, 100 files, 512 KiB per file, and 4 MiB in total.
+- **Storage:** each project lives in `filesDir/projects/<id>/` (`project.json`, `transcript.jsonl`, `conversation.json`, `site/`). Settings are in DataStore (`settings.json`). If the Keystore key is lost, the saved API key is cleared and must be entered again.
+- **The system prompt never changes.** Editing it changes the prefix of every existing Claude conversation, which `prefix_mismatch_behavior: "error"` rejects. Instructions for all apps and the network setting ride on the next user text instead, and `Conversation` records what was last delivered. This is why the prompt still describes network access as blocked.
+- **Generation loop:** `AgentEngine` saves the input it is about to send as `pending` before each turn, so Stop, a failure, or the step limit can resume with **Continue**. Only complete turns are appended. Tool calls from a turn cut off by `max_tokens` or a refusal are never run. SDK retries are off; the engine retries rate limits, server errors, and network failures after 2, 5, and 15 seconds.
+- **Claude:** each beta header is sent only to models that accept it. `pause_turn` maps to `StopReason.PAUSED`, and the engine resumes with `TurnInput(resume = true)`.
+- **OpenAI:** requests replay the history statelessly (`store: false`) as a raw JSON tree, because a typed round-trip adds fields under R8. `OpenAiRequests.params` drops null fields from the copy it sends: output items carry `status: null`, which OpenAI rejects as input. The stored history keeps them. `*codex*` model IDs are deprecated, so the model list is filtered to the coding families.
+- **SDKs:** `minSdk` is 26 instead of using core library desugaring, because both SDKs use `java.time`. Both ship consumer R8 rules. The only app rule they need is the `-dontwarn` in `sdk.keep`.
+- **Provider fixtures:** the SSE fixtures are written by hand to the documented wire format, so they can miss what the live API really sends. After changing a provider, run a real generation on a minified build.
+
 ### Adding an LLM provider
 
 Providers are adapters behind `LlmProvider`, and each SDK stays inside its own `llm` subpackage. To add one:
@@ -103,4 +114,4 @@ Providers are adapters behind `LlmProvider`, and each SDK stays inside its own `
 3. Register the adapter in `AppContainer`.
 4. Add its display name in `ui/Labels.kt`; the compiler flags it if it's missing.
 
-A provider constructed with `enabled = false` keeps its code and tests but isn't offered in Settings, isn't registered, and existing projects that use it get a "provider unavailable" notice instead of generating. OpenAI is disabled this way until it has been verified with a real key; to re-enable it, remove `enabled = false` from `ProviderId.OPENAI`.
+A provider constructed with `enabled = false` keeps its code and tests but isn't offered in Settings, isn't registered, and existing projects that use it get a "provider unavailable" notice instead of generating.

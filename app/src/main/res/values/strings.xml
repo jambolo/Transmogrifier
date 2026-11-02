@@ -17,7 +17,9 @@
     <string name="test">Check connection</string>
 
     <string name="provider_anthropic">Claude</string>
-    <string name="provider_openai">OpenAI</string>
+    <string name="provider_openai">ChatGPT</string>
+    <string name="key_source_anthropic">Anthropic</string>
+    <string name="key_source_openai">OpenAI</string>
     <string name="effort_low">Low</string>
     <string name="effort_medium">Medium</string>
     <string name="effort_high">High</string>
@@ -94,7 +96,7 @@
     </plurals>
     <string name="key_error_missing">No key is saved. Paste your key above and save it.</string>
     <string name="key_error_invalid">%1$s didn\'t recognize this key. Check that you copied all of it, or create a new one.</string>
-    <string name="key_error_permission">This key isn\'t allowed to use %1$s. Check its permissions in your %1$s account.</string>
+    <string name="key_error_permission">This key isn\'t allowed to use %1$s. Check its permissions in your %2$s account.</string>
     <string name="key_error_rate_limited">%1$s is getting too many requests from this key. Wait a minute and try again.</string>
     <string name="key_error_overloaded">%1$s is busy right now. Try again in a few minutes.</string>
     <string name="key_error_server">%1$s had a problem on its end. Try again later.</string>
@@ -107,6 +109,7 @@
     <string name="key_error_detail">Error %1$d: %2$s</string>
     <string name="key_error_code">Error %1$d</string>
     <string name="default_provider">AI service for new apps</string>
+    <string name="default_provider_help">Each app keeps the service it was made with.</string>
     <string name="default_model">Model for new apps</string>
     <string name="effort">Thinking effort</string>
     <string name="limits">Limits</string>
