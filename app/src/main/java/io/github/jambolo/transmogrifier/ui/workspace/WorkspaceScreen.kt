@@ -29,6 +29,8 @@ import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AssistChip
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledIconButton
@@ -166,14 +168,19 @@ fun WorkspaceScreen(
                     }
                 },
                 actions = {
-                    IconButton(
+                    Button(
                         onClick = onRun,
-                        enabled = state.files.isNotEmpty() && !state.generating
+                        enabled = state.files.isNotEmpty() && !state.generating,
+                        contentPadding = ButtonDefaults.ButtonWithIconContentPadding,
+                        modifier = Modifier.padding(end = 8.dp)
                     ) {
                         Icon(
                             painterResource(R.drawable.ic_brand_play),
-                            stringResource(R.string.run)
+                            null,
+                            Modifier.size(ButtonDefaults.IconSize)
                         )
+                        Spacer(Modifier.width(ButtonDefaults.IconSpacing))
+                        Text(stringResource(R.string.run), maxLines = 1)
                     }
                 }
             )

@@ -176,7 +176,7 @@ class AgentEngineTest {
 
         hang = false
         engine.generate(id, "Go on").toList()
-        assertEquals(TurnInput(text = "Go on"), requests.last().input)
+        assertTrue(requests.last().input.text!!.endsWith("\n\nGo on"))
         assertNull(store.conversation(id)!!.pending)
     }
 
@@ -218,12 +218,31 @@ class AgentEngineTest {
         engine.generate(id, "Add a reset").toList()
 
         val texts = requests.map { it.input.text!! }
-        assertEquals("A counter", texts[0])
+        assertTrue(texts[0].endsWith("\n\nA counter"))
         assertTrue(texts[1].startsWith("The user turned on network access"))
         assertTrue(texts[1].endsWith("\n\nShow live scores"))
         assertEquals("Make it blue", texts[2])
         assertTrue(texts[3].startsWith("The user turned network access for their apps off"))
         assertTrue(requests.all { it.systemPrompt == AgentPrompt.SYSTEM })
+    }
+
+    @Test
+    fun appNameIsSentOnceAndAgainAfterRename() = runTest {
+        val (engine, id) = engine(ScriptedProvider { listOf(completed(it, StopReason.END_TURN)) })
+        engine.generate(id, "A counter").toList()
+        engine.generate(id, "Make it blue").toList()
+        store.rename(id, "Tally")
+        engine.generate(id, "Add a reset").toList()
+
+        val texts = requests.map { it.input.text!! }
+        assertTrue(texts[0].startsWith("The user named this app \"App\""))
+        assertTrue(texts[0].endsWith("\n\nA counter"))
+        assertEquals("Make it blue", texts[1])
+        assertTrue(texts[2].startsWith("The user named this app \"Tally\""))
+        assertTrue(texts[2].endsWith("\n\nAdd a reset"))
+        assertTrue(requests.all { it.systemPrompt == AgentPrompt.SYSTEM })
+        assertEquals("Tally", store.conversation(id)!!.appName)
+        assertEquals(TranscriptEntry.Prompt("A counter"), store.transcript(id).first().first())
     }
 
     @Test
