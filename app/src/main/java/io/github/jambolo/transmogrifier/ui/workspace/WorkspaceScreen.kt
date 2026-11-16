@@ -81,11 +81,13 @@ import io.github.jambolo.transmogrifier.ui.providerLabel
 import io.github.jambolo.transmogrifier.ui.theme.TransmogrifierTheme
 import io.github.jambolo.transmogrifier.ui.toolLabel
 import java.text.NumberFormat
+import kotlinx.coroutines.flow.first
 
 @Composable
 fun WorkspaceRoute(
     container: AppContainer,
     projectId: ProjectId,
+    run: Boolean,
     onBack: () -> Unit,
     onOpenSettings: () -> Unit
 ) {
@@ -104,6 +106,17 @@ fun WorkspaceRoute(
         result?.let { viewModel.onRunFinished(it.errorLog, it.fixErrors) }
     }
     LaunchedEffect(state.projectMissing) { if (state.projectMissing) onBack() }
+    // Saved so the app starts only on the first visit, not again when returning from the runner.
+    var runPending by rememberSaveable { mutableStateOf(run) }
+    LaunchedEffect(Unit) {
+        if (runPending) {
+            runPending = false
+            viewModel.builtProject()?.let {
+                val allowNetwork = container.settingsRepository.settings.first().allowAppNetwork
+                runner.launch(RunApp.Input(it, allowNetwork))
+            }
+        }
+    }
     WorkspaceScreen(
         state,
         onBack = onBack,

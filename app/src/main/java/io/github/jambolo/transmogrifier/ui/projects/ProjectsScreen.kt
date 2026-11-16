@@ -58,7 +58,12 @@ import io.github.jambolo.transmogrifier.ui.theme.Sky
 import io.github.jambolo.transmogrifier.ui.theme.TransmogrifierTheme
 
 @Composable
-fun ProjectsRoute(container: AppContainer, onOpen: (ProjectId) -> Unit, onSettings: () -> Unit) {
+fun ProjectsRoute(
+    container: AppContainer,
+    onOpen: (ProjectId) -> Unit,
+    onCreated: (ProjectId) -> Unit,
+    onSettings: () -> Unit
+) {
     val viewModel = viewModel {
         ProjectsViewModel(container.projectStore, container.settingsRepository)
     }
@@ -66,7 +71,7 @@ fun ProjectsRoute(container: AppContainer, onOpen: (ProjectId) -> Unit, onSettin
     ProjectsScreen(
         projects,
         onOpen = onOpen,
-        onCreate = { name -> viewModel.create(name, onOpen) },
+        onCreate = { name -> viewModel.create(name, onCreated) },
         onRename = viewModel::rename,
         onDelete = viewModel::delete,
         onSettings = onSettings

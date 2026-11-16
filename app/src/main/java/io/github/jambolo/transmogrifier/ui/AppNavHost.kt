@@ -22,8 +22,9 @@ sealed interface Destination {
     @Serializable
     data object Projects : Destination
 
+    /** [run] starts the app right away when it has been built. */
     @Serializable
-    data class Workspace(val projectId: String) : Destination
+    data class Workspace(val projectId: String, val run: Boolean = false) : Destination
 
     @Serializable
     data object Settings : Destination
@@ -46,15 +47,17 @@ fun AppNavHost(container: AppContainer) {
         composable<Destination.Projects> {
             ProjectsRoute(
                 container,
-                onOpen = { navController.navigate(Destination.Workspace(it.value)) },
+                onOpen = { navController.navigate(Destination.Workspace(it.value, run = true)) },
+                onCreated = { navController.navigate(Destination.Workspace(it.value)) },
                 onSettings = { navController.navigate(Destination.Settings) }
             )
         }
         composable<Destination.Workspace> { entry ->
-            val projectId = ProjectId(entry.toRoute<Destination.Workspace>().projectId)
+            val route = entry.toRoute<Destination.Workspace>()
             WorkspaceRoute(
                 container,
-                projectId,
+                ProjectId(route.projectId),
+                run = route.run,
                 onBack = { navController.navigateUp() },
                 onOpenSettings = { navController.navigate(Destination.Settings) }
             )

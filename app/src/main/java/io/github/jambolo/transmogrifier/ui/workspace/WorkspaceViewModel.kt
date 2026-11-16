@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -106,6 +107,10 @@ class WorkspaceViewModel(
     fun stop() {
         generation?.cancel()
     }
+
+    /** The project if its app has been built, or null. */
+    suspend fun builtProject(): Project? = store.project(projectId).first()
+        ?.takeIf { workspace()?.listFiles().orEmpty().isNotEmpty() }
 
     fun openFile(path: String?) {
         savedStateHandle[OPEN_FILE] = path
