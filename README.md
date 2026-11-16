@@ -41,8 +41,9 @@ You use your own API key, and requests are billed to that account. There is no s
 
 ### Run an app
 
-Tap **Open app** (the play button) to open the app in the built-in browser. In the toolbar:
+Tap **Open app** to open the app in the built-in browser. In the toolbar:
 
+- **Chat** returns to the chat.
 - **Reload** loads the app again, including any changes.
 - **Error details** shows the app's log. A badge counts the errors.
 - **Try to fix it**, in the error panel, returns to the chat and asks the model to fix the errors.
@@ -51,7 +52,7 @@ After a run with errors, the chat's **Try to fix it** button also sends them to 
 
 ### Manage apps
 
-From the menu next to each app on the projects screen, you can rename or delete it. Each app keeps the service and model it was created with.
+Use the buttons next to each app on the projects screen to rename or delete it. The model uses your app's name, and picks up a new name on your next request. Each app keeps the service and model it was created with.
 
 ## Privacy and safety
 

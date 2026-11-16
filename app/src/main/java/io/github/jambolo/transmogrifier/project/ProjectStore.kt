@@ -81,14 +81,15 @@ enum class NoticeKind {
 /**
  * The provider conversation for one project: append-only [history] plus [pending] input that has not been sent
  * successfully yet (a turn that failed or was stopped resumes from it). [instructions] are the user's standing
- * instructions as last delivered in [history].
+ * instructions, and [appName] the name the user gave the app, as last delivered in [history].
  */
 @Serializable
 data class Conversation(
     val history: ProviderHistory,
     val pending: TurnInput? = null,
     val instructions: String = "",
-    val network: Boolean = false
+    val network: Boolean = false,
+    val appName: String = ""
 )
 
 interface ProjectStore {

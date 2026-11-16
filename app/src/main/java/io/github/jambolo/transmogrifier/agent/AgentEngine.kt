@@ -91,6 +91,10 @@ class AgentEngine(
                         announced = withInstructions(instructions, announced)
                     }
                     if (network != conversation.network) announced = withNetwork(network, announced)
+                    // So is the app's name, which also covers renames and existing conversations.
+                    if (project.name != conversation.appName) {
+                        announced = withAppName(project.name, announced)
+                    }
                     input.copy(text = announced)
                 } else {
                     input
@@ -114,7 +118,12 @@ class AgentEngine(
                     } else {
                         conversation.instructions
                     },
-                    network = if (inputText != null && appended) network else conversation.network
+                    network = if (inputText != null && appended) network else conversation.network,
+                    appName = if (inputText != null && appended) {
+                        project.name
+                    } else {
+                        conversation.appName
+                    }
                 )
                 store.saveConversation(projectId, conversation)
                 if (turn.text.isNotBlank()) {
@@ -287,6 +296,11 @@ class AgentEngine(
 
     private fun fixErrorsPrompt(log: String) =
         "Running the app produced these errors in the browser console. Fix their causes.\n\n$log"
+
+    private fun withAppName(name: String, text: String) =
+        "The user named this app \"$name\", replacing any earlier name. Use exactly this name " +
+            "wherever the app shows its name, such as the page title and main heading, and " +
+            "don't make up another.\n\n$text"
 
     private fun withNetwork(allowed: Boolean, text: String) = if (allowed) {
         "The user turned on network access for their apps, overriding the system prompt: " +

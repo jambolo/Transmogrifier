@@ -7,7 +7,6 @@
     <string name="close">Close</string>
     <string name="delete">Delete app</string>
     <string name="hide">Hide</string>
-    <string name="more_options">More options</string>
     <string name="name">App name</string>
     <string name="ok">OK</string>
     <string name="rename">Rename</string>
@@ -74,6 +73,7 @@
     <string name="tool_deleted">Deleted %1$s</string>
 
     <!-- Runner -->
+    <string name="back_to_chat">Chat</string>
     <string name="reload">Reload</string>
     <string name="console">Error details</string>
     <string name="send_errors">Try to fix it</string>

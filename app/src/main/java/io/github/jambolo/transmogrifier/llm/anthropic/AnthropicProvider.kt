@@ -109,7 +109,7 @@ class AnthropicProvider(
             val status = e.statusCode()
             throw if (status >= 500) {
                 val overloaded =
-                    status == 529 || e.errorType().getOrNull() == ErrorType.OVERLOADED_ERROR
+                    status == 529 || e.type().getOrNull() == ErrorType.OVERLOADED_ERROR
                 LlmException.Server(e, status, detail(e), overloaded)
             } else {
                 LlmException.Rejected(e, status, detail(e))

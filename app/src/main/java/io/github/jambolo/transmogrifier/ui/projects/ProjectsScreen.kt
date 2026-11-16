@@ -3,7 +3,6 @@ package io.github.jambolo.transmogrifier.ui.projects
 import android.text.format.DateUtils
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -14,11 +13,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
@@ -62,7 +58,12 @@ import io.github.jambolo.transmogrifier.ui.theme.Sky
 import io.github.jambolo.transmogrifier.ui.theme.TransmogrifierTheme
 
 @Composable
-fun ProjectsRoute(container: AppContainer, onOpen: (ProjectId) -> Unit, onSettings: () -> Unit) {
+fun ProjectsRoute(
+    container: AppContainer,
+    onOpen: (ProjectId) -> Unit,
+    onCreated: (ProjectId) -> Unit,
+    onSettings: () -> Unit
+) {
     val viewModel = viewModel {
         ProjectsViewModel(container.projectStore, container.settingsRepository)
     }
@@ -70,7 +71,7 @@ fun ProjectsRoute(container: AppContainer, onOpen: (ProjectId) -> Unit, onSettin
     ProjectsScreen(
         projects,
         onOpen = onOpen,
-        onCreate = { name -> viewModel.create(name, onOpen) },
+        onCreate = { name -> viewModel.create(name, onCreated) },
         onRename = viewModel::rename,
         onDelete = viewModel::delete,
         onSettings = onSettings
@@ -252,7 +253,6 @@ private fun ProjectRow(
     onRename: () -> Unit,
     onDelete: () -> Unit
 ) {
-    var menuOpen by rememberSaveable { mutableStateOf(false) }
     val now = System.currentTimeMillis()
     val edited = if (now - project.updatedAtMillis < DateUtils.MINUTE_IN_MILLIS) {
         stringResource(R.string.just_now)
@@ -300,26 +300,17 @@ private fun ProjectRow(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            Box {
-                IconButton(onClick = { menuOpen = true }) {
-                    Icon(Icons.Default.MoreVert, stringResource(R.string.more_options))
-                }
-                DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
-                    DropdownMenuItem(
-                        text = { Text(stringResource(R.string.rename)) },
-                        leadingIcon = { Icon(painterResource(R.drawable.ic_brand_edit), null) },
-                        onClick = {
-                            menuOpen = false
-                            onRename()
-                        }
+            Row {
+                IconButton(onClick = onRename) {
+                    Icon(
+                        painterResource(R.drawable.ic_brand_edit),
+                        stringResource(R.string.rename)
                     )
-                    DropdownMenuItem(
-                        text = { Text(stringResource(R.string.delete)) },
-                        leadingIcon = { Icon(painterResource(R.drawable.ic_brand_delete), null) },
-                        onClick = {
-                            menuOpen = false
-                            onDelete()
-                        }
+                }
+                IconButton(onClick = onDelete) {
+                    Icon(
+                        painterResource(R.drawable.ic_brand_delete),
+                        stringResource(R.string.delete)
                     )
                 }
             }

@@ -29,6 +29,8 @@ import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.AssistChip
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledIconButton
@@ -79,11 +81,13 @@ import io.github.jambolo.transmogrifier.ui.providerLabel
 import io.github.jambolo.transmogrifier.ui.theme.TransmogrifierTheme
 import io.github.jambolo.transmogrifier.ui.toolLabel
 import java.text.NumberFormat
+import kotlinx.coroutines.flow.first
 
 @Composable
 fun WorkspaceRoute(
     container: AppContainer,
     projectId: ProjectId,
+    run: Boolean,
     onBack: () -> Unit,
     onOpenSettings: () -> Unit
 ) {
@@ -102,6 +106,17 @@ fun WorkspaceRoute(
         result?.let { viewModel.onRunFinished(it.errorLog, it.fixErrors) }
     }
     LaunchedEffect(state.projectMissing) { if (state.projectMissing) onBack() }
+    // Saved so the app starts only on the first visit, not again when returning from the runner.
+    var runPending by rememberSaveable { mutableStateOf(run) }
+    LaunchedEffect(Unit) {
+        if (runPending) {
+            runPending = false
+            viewModel.builtProject()?.let {
+                val allowNetwork = container.settingsRepository.settings.first().allowAppNetwork
+                runner.launch(RunApp.Input(it, allowNetwork))
+            }
+        }
+    }
     WorkspaceScreen(
         state,
         onBack = onBack,
@@ -166,14 +181,19 @@ fun WorkspaceScreen(
                     }
                 },
                 actions = {
-                    IconButton(
+                    Button(
                         onClick = onRun,
-                        enabled = state.files.isNotEmpty() && !state.generating
+                        enabled = state.files.isNotEmpty() && !state.generating,
+                        contentPadding = ButtonDefaults.ButtonWithIconContentPadding,
+                        modifier = Modifier.padding(end = 8.dp)
                     ) {
                         Icon(
                             painterResource(R.drawable.ic_brand_play),
-                            stringResource(R.string.run)
+                            null,
+                            Modifier.size(ButtonDefaults.IconSize)
                         )
+                        Spacer(Modifier.width(ButtonDefaults.IconSpacing))
+                        Text(stringResource(R.string.run), maxLines = 1)
                     }
                 }
             )
