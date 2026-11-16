@@ -58,7 +58,7 @@ Pushing a `v*` tag runs `.github/workflows/release.yml`, which checks that the t
 | `SIGNING_KEY_ALIAS` | Key alias |
 | `SIGNING_KEY_PASSWORD` | Key password |
 
-To release: bump `versionCode` and `versionName`, commit on the `release/*` branch, create an annotated tag `vX.Y.Z`, merge to `master` with `--no-ff`, and run `git push origin master --follow-tags`.
+To release: bump `versionCode` and `versionName`, verify the build, commit on the `release/*` branch, merge to `master` with `--no-ff`, create an annotated tag `vX.Y.Z`, and run `git push origin master --follow-tags`.
 
 ## Tests
 
