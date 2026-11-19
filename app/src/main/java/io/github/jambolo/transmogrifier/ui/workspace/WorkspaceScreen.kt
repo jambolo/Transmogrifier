@@ -383,6 +383,9 @@ private fun TranscriptItem(entry: TranscriptEntry) {
 
                     NoticeKind.PROVIDER_UNAVAILABLE ->
                         stringResource(R.string.notice_provider_unavailable)
+
+                    NoticeKind.IMPORTED_WITHOUT_CONVERSATION ->
+                        stringResource(R.string.notice_imported_without_conversation)
                 },
                 style = MaterialTheme.typography.labelMedium,
                 fontStyle = FontStyle.Italic,
@@ -405,7 +408,10 @@ private fun NoticeActions(kind: NoticeKind, onResume: () -> Unit, onOpenSettings
                 Text(stringResource(R.string.open_settings))
             }
 
-        NoticeKind.TRUNCATED, NoticeKind.REFUSED, NoticeKind.PROVIDER_UNAVAILABLE -> Unit
+        NoticeKind.TRUNCATED,
+        NoticeKind.REFUSED,
+        NoticeKind.PROVIDER_UNAVAILABLE,
+        NoticeKind.IMPORTED_WITHOUT_CONVERSATION -> Unit
     }
 }
 

@@ -32,6 +32,19 @@
     <string name="just_now">just now</string>
     <string name="delete_app_title">Delete “%1$s”?</string>
     <string name="delete_app_body">This removes the app, its files, and its conversation from this device. This can\'t be undone.</string>
+    <string name="more_options">More options for %1$s</string>
+    <string name="more">More options</string>
+    <string name="export_site">Export app files</string>
+    <string name="back_up">Back up</string>
+    <string name="import_app">Import app</string>
+    <string name="backup_file_name">%1$s backup.zip</string>
+    <string name="share_export">Share or save the app</string>
+    <string name="export_failed">Couldn\'t save the file: %1$s</string>
+    <string name="import_failed">Couldn\'t import the app: %1$s</string>
+    <string name="import_conversation_title">Import “%1$s” with its conversation?</string>
+    <string name="import_conversation_body">With the conversation, your AI service remembers how the app was made. Without it, your AI service starts again from the app\'s files. If changes fail after importing with the conversation, import again without it.</string>
+    <string name="import_with_conversation">With conversation</string>
+    <string name="import_without_conversation">Without</string>
 
     <!-- Workspace -->
     <string name="provider_model">%1$s · %2$s</string>
@@ -52,6 +65,7 @@
     <string name="notice_refused">The AI service couldn\'t help with this request. Try a different description.</string>
     <string name="notice_auth_failed">Your AI service couldn\'t accept this key. Check it in Settings.</string>
     <string name="notice_provider_unavailable">This app\'s AI service isn\'t available in this version, so the app can\'t be changed.</string>
+    <string name="notice_imported_without_conversation">Imported without its conversation. Your AI service starts again from the app\'s files.</string>
     <string name="continue_generation">Continue</string>
     <string name="open_settings">Open settings</string>
     <plurals name="retrying">

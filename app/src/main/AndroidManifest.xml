@@ -40,6 +40,16 @@
             android:process=":runner"
             android:theme="@style/Theme.Transmogrifier"
             android:windowSoftInputMode="adjustResize" />
+        <!-- Shares exported zips with the app the user picks from the share menu. -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.exports"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
     </application>
 
 </manifest>

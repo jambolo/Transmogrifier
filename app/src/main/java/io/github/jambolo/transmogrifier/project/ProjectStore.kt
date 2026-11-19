@@ -75,7 +75,10 @@ enum class NoticeKind {
     FAILED,
 
     /** The project's provider is disabled in this version of the app. */
-    PROVIDER_UNAVAILABLE
+    PROVIDER_UNAVAILABLE,
+
+    /** The project was imported without its conversation; the model starts again from the current files. */
+    IMPORTED_WITHOUT_CONVERSATION
 }
 
 /**
